@@ -13,7 +13,6 @@
     "mxgraph": "^4.2.2",
     "rxjs": "^6.6.7",
     "vue": "^3.0.0",
-    "vue-class-component": "^8.0.0-0",
     "vue-router": "^4.0.0-0",
     "vue-svgicon": "^3.2.9",
     "vuex": "^4.0.0-0"

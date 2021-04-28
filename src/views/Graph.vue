@@ -2,11 +2,11 @@
   <div class="graph-test">
     <div class="title">{{ title }}</div>
     <div ref="graphContainer" class="graph"></div>
+    <!-- <div :ref="graphContainerFunc" class="graph"></div> -->
   </div>
 </template>
 
 <script lang="ts">
-import { Vue } from "vue-class-component";
 import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
 const {
   mxGraph,
@@ -22,67 +22,74 @@ const {
   mxBasePath: "mxgraph",
 });
 
-export default class GraphTest extends Vue {
-  title = "默认标题";
-  private graph: mxgraph.mxGraph | null = null;
+import {
+  defineComponent,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from "vue";
 
-  created(): void {
-    this.title = "画图板";
+export default defineComponent({
+  setup() {
     console.log("create GraphTest");
-  }
+    const graphContainer = ref<Element>();
 
-  mounted(): void {
-    this.initContainer();
-  }
+    const title = ref("默认标题");
+    let graph: mxgraph.mxGraph | null = null;
 
-  initContainer(): void {
-    const container = this.$refs.graphContainer as HTMLElement;
+    onMounted(() => {
+      console.dir(graphContainer.value);
+      initContainer();
+    });
 
-    if (!mxClient.isBrowserSupported()) {
-      mxUtils.error("Browser is not supported!", 200, false);
-    } else {
-      mxEvent.disableContextMenu(container);
+    onBeforeUnmount(() => {
+      console.log("destroy GraphTest");
+    });
 
-      this.graph = new mxGraph(container);
-      new mxRubberband(this.graph);
-      var parent = this.graph.getDefaultParent();
+    // let refs = ref<Element>()
+    // const graphContainerFunc = (el:Element) => {
+    //   refs.value = el
+    // }
 
-      // this.graph.getModel()
-      this.graph.getModel().beginUpdate();
-      try {
-        var v1 = this.graph.insertVertex(
-          parent,
-          null,
-          "Hello,",
-          20,
-          20,
-          80,
-          30
-        );
+    // nextTick( () => {
+    //   console.log(refs.value)
+    // })
 
-        var v2 = this.graph.insertVertex(
-          parent,
-          null,
-          "World!",
-          200,
-          150,
-          80,
-          30
-        );
-        this.graph.insertEdge(
-          parent,
-          "",
-          "",
-          v1,
-          v2,
-          "noLabel=1;strokeColor=red"
-        );
-      } finally {
-        this.graph.getModel().endUpdate();
+    const initContainer = () => {
+      if (!mxClient.isBrowserSupported()) {
+        mxUtils.error("Browser is not supported!", 200, false);
+      } else {
+        const container = graphContainer.value;
+        mxEvent.disableContextMenu(container);
+
+        graph = new mxGraph(container);
+
+        // config graph
+        graph.setAllowDanglingEdges(false);
+
+        new mxRubberband(graph);
+        var parent = graph.getDefaultParent();
+
+        // this.graph.getModel()
+        graph.getModel().beginUpdate();
+        try {
+          var v1 = graph.insertVertex(parent, null, "Hello,", 20, 20, 80, 30);
+          var v2 = graph.insertVertex(parent, null, "World!", 200, 150, 80, 30);
+          graph.insertEdge(parent, "", "", v1, v2, "noLabel=1;strokeColor=red");
+        } finally {
+          graph.getModel().endUpdate();
+        }
       }
-    }
-  }
-}
+    };
+
+    return {
+      graphContainer,
+      title,
+      // graphContainerFunc
+    };
+  },
+});
 </script>
 
 <style scoped lang="scss">
