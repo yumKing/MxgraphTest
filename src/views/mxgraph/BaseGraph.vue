@@ -2,23 +2,12 @@
   <div class="graph-test">
     <div class="title">{{ title }}</div>
     <div ref="graphContainer" class="graph"></div>
-    <!-- <div :ref="graphContainerFunc" class="graph"></div> -->
   </div>
 </template>
 
 <script lang="ts">
 import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
-const {
-  mxGraph,
-  mxClient,
-  mxUtils,
-  mxEvent,
-  mxRubberband,
-  mxConstants,
-  mxEdgeStyle,
-} = mxgraphFactory({
-  //   mxLoadResources: false,
-  //   mxLoadStylesheets: false,
+const { mxGraph, mxClient, mxUtils, mxEvent, mxRubberband } = mxgraphFactory({
   mxBasePath: "mxgraph",
 });
 
@@ -31,12 +20,13 @@ import {
 } from "vue";
 
 export default defineComponent({
+  name: "BaseGraph",
   setup() {
     console.log("create GraphTest");
     const graphContainer = ref<Element>();
 
-    const title = ref("默认标题");
-    let graph: mxgraph.mxGraph | null = null;
+    const title = ref("基础例子");
+    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
 
     onMounted(() => {
       console.dir(graphContainer.value);
@@ -46,15 +36,6 @@ export default defineComponent({
     onBeforeUnmount(() => {
       console.log("destroy GraphTest");
     });
-
-    // let refs = ref<Element>()
-    // const graphContainerFunc = (el:Element) => {
-    //   refs.value = el
-    // }
-
-    // nextTick( () => {
-    //   console.log(refs.value)
-    // })
 
     const initContainer = () => {
       if (!mxClient.isBrowserSupported()) {
@@ -86,20 +67,9 @@ export default defineComponent({
     return {
       graphContainer,
       title,
-      // graphContainerFunc
     };
   },
 });
 </script>
 
-<style scoped lang="scss">
-.graph {
-  position: relative;
-  overflow: auto;
-  margin: 5px auto;
-  width: 70vw;
-  height: 80vh;
-  background: url("../assets/grid.gif");
-  cursor: default;
-}
-</style>
+<style></style>

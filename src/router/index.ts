@@ -18,9 +18,51 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: "/graph",
-    name: "Graph",
+    redirect: "/graph/base",
+  },
+  {
+    path: "/graph/base",
+    name: "Base",
     component: () =>
-      import(/* webpackChunkName: "graph" */ "../views/Graph.vue"),
+      import(/* webpackChunkName: "gbase" */ "../views/mxgraph/Base.vue"),
+  },
+  {
+    path: "/graph/baseGraph",
+    name: "BaseGraph",
+    component: () =>
+      import(
+        /* webpackChunkName: "baseGraph" */ "../views/mxgraph/BaseGraph.vue"
+      ),
+  },
+  {
+    path: "/graph/anchors",
+    name: "Anchors",
+    component: () =>
+      import(/* webpackChunkName: "anchors" */ "../views/mxgraph/Anchors.vue"),
+  },
+  {
+    path: "/graph/animation",
+    name: "Animation",
+    component: () =>
+      import(
+        /* webpackChunkName: "animation" */ "../views/mxgraph/Animation.vue"
+      ),
+  },
+  {
+    path: "/graph/boundary",
+    name: "Boundary",
+    component: () =>
+      import(
+        /* webpackChunkName: "boundary" */ "../views/mxgraph/Boundary.vue"
+      ),
+  },
+  {
+    path: "/graph/clipboard",
+    name: "Clipboard",
+    component: () =>
+      import(
+        /* webpackChunkName: "clipboard" */ "../views/mxgraph/Clipboard.vue"
+      ),
   },
 ];
 

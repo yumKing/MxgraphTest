@@ -2,7 +2,7 @@
   <div id="nav">
     <router-link to="/">Home</router-link> |
     <router-link to="/about">About</router-link> |
-    <router-link to="/graph">Graph</router-link>
+    <router-link to="/graph/base">Graph-Index</router-link>
   </div>
   <router-view />
 </template>

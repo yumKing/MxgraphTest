@@ -16,27 +16,26 @@ export default defineComponent({
     HelloWorld,
   },
 
-  setup(props, context){
-
-    let msg = ref("Welcome to Your Vue.js + TypeScript App")
-    const title = ref("this is title")
+  setup(props, context) {
+    let msg = ref("Welcome to Your Vue.js + TypeScript App");
+    const title = ref("this is title");
 
     console.log("create home component");
     console.dir(props);
     console.dir(context);
     console.log(title);
-    
+
     onBeforeUnmount(() => {
       console.log("close home component");
-    })
+    });
 
-    const test = ():void => {
+    const test = (): void => {
       msg.value = "test" + Math.floor(Math.random() * 10);
-    }
+    };
 
-    const showData = ():void => {
+    const showData = (): void => {
       console.log(title.value);
-    }
+    };
 
     showData();
 
@@ -47,22 +46,22 @@ export default defineComponent({
   },
 
   // data() {
-    
+
   // },
 
   // created() {
-    
+
   // },
   // beforeUnmount() {
-    
+
   // },
   // methods: {
   //   test() {
-      
+
   //   },
 
   //   showData() {
-      
+
   //   },
   // },
 });

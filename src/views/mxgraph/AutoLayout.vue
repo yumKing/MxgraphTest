@@ -1,0 +1,84 @@
+<template>
+  <div class="graph-test">
+    <div class="title">{{ title }}</div>
+    <div ref="graphContainer" class="graph"></div>
+  </div>
+</template>
+
+<script lang="ts">
+import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
+const {
+  mxGraph,
+  mxClient,
+  mxUtils,
+  mxEvent,
+  mxRubberband,
+  mxConstants,
+  mxEdgeStyle,
+  mxObjectCodec,
+} = mxgraphFactory({
+  mxBasePath: "mxgraph",
+});
+
+import {
+  defineComponent,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+} from "vue";
+
+export default defineComponent({
+  name: "AutoLayout",
+  setup() {
+    console.log("create AutoLayout");
+    const graphContainer = ref<Element>();
+
+    const title = ref("自动布局");
+    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
+
+    onMounted(() => {
+      console.dir(graphContainer.value);
+      initContainer();
+    });
+
+    onBeforeUnmount(() => {
+      console.log("destroy AutoLayout");
+    });
+
+    const initContainer = () => {
+      if (!mxClient.isBrowserSupported()) {
+        mxUtils.error("Browser is not supported!", 200, false);
+      } else {
+        const container = graphContainer.value;
+        mxEvent.disableContextMenu(container);
+
+        graph = new mxGraph(container);
+
+        // config graph
+        graph.setAllowDanglingEdges(false);
+
+        new mxRubberband(graph);
+        var parent = graph.getDefaultParent();
+
+        // this.graph.getModel()
+        graph.getModel().beginUpdate();
+        try {
+          var v1 = graph.insertVertex(parent, null, "Hello,", 20, 20, 80, 30);
+          var v2 = graph.insertVertex(parent, null, "World!", 200, 150, 80, 30);
+          graph.insertEdge(parent, "", "", v1, v2, "noLabel=1;strokeColor=red");
+        } finally {
+          graph.getModel().endUpdate();
+        }
+      }
+    };
+
+    return {
+      graphContainer,
+      title,
+    };
+  },
+});
+</script>
+
+<style></style>
