@@ -5,8 +5,8 @@
     <router-link to="/graph/animation">基础动画</router-link> |
     <router-link to="/graph/boundary">边界</router-link> |
     <router-link to="/graph/clipboard">粘贴板</router-link> |
-    <router-link to="/graph/baseGraph">helloword</router-link> |
-    <router-link to="/graph/baseGraph">helloword</router-link> |
+    <router-link to="/graph/codec">XML构建图形</router-link> |
+    <router-link to="/graph/myflow">myflow</router-link> |
   </div>
 </template>
 

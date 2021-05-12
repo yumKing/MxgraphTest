@@ -7,8 +7,7 @@
 </template>
 
 <script lang="ts">
-import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
-const {
+import {
   mxGraph,
   mxClient,
   mxUtils,
@@ -19,9 +18,9 @@ const {
   mxConnectionConstraint,
   mxPoint,
   mxCellState,
-} = mxgraphFactory({
-  mxBasePath: "mxgraph",
-});
+} from "./util/mxgraph";
+import * as mx from "mxgraph";
+
 
 import {
   defineComponent,
@@ -38,7 +37,7 @@ export default defineComponent({
     const graphContainer = ref<Element>();
 
     const title = ref("锚点");
-    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
+    let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
       console.dir(graphContainer.value);
@@ -85,7 +84,7 @@ export default defineComponent({
       if (!mxClient.isBrowserSupported()) {
         mxUtils.error("Browser is not supported!", 200, false);
       } else {
-        const container = graphContainer.value;
+        const container = graphContainer.value as HTMLElement;
         mxEvent.disableContextMenu(container);
 
         graph = new mxGraph(container);
@@ -95,11 +94,11 @@ export default defineComponent({
         graph.setConnectable(true);
         graph.connectionHandler.createEdgeState = (me: any) => {
           const edge = graph.createEdge(
-            {} as mxgraph.mxCell,
+            {} as mx.mxCell,
             "",
             null,
-            {} as mxgraph.mxCell,
-            {} as mxgraph.mxCell
+            {} as mx.mxCell,
+            {} as mx.mxCell
           );
           return new mxCellState(graph.view, edge, graph.getCellStyle(edge));
         };

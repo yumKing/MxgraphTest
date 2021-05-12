@@ -6,8 +6,7 @@
 </template>
 
 <script lang="ts">
-import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
-const {
+import {
   mxGraph,
   mxClient,
   mxUtils,
@@ -15,10 +14,10 @@ const {
   mxRubberband,
   mxClipboard,
   mxCodec,
-  mxGraphModel,
-} = mxgraphFactory({
-  mxBasePath: "mxgraph",
-});
+  mxGraphModel
+} from "./util/mxgraph";
+import * as mx from "mxgraph";
+
 
 import { defineComponent, onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -29,7 +28,7 @@ export default defineComponent({
     const graphContainer = ref<Element>();
 
     const title = ref("粘贴板");
-    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
+    let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
       console.dir(graphContainer.value);
@@ -44,7 +43,7 @@ export default defineComponent({
       if (!mxClient.isBrowserSupported()) {
         mxUtils.error("Browser is not supported!", 200, false);
       } else {
-        const container = graphContainer.value;
+        const container = graphContainer.value as HTMLElement;
         mxEvent.disableContextMenu(container);
 
         graph = new mxGraph(container);
@@ -52,7 +51,7 @@ export default defineComponent({
         // 公共方法 for 粘贴板
         (mxClipboard as any).cellsToString = (cells: any): string => {
           let codec = new mxCodec();
-          let model = new mxGraphModel();
+          let model = new mxGraphModel(graph.getDefaultParent());
           let parent = model.getChildAt(model.getRoot(), 0);
           for (let i = 0; i < cells.length; i++) {
             model.add(parent, cells[i]);
@@ -121,7 +120,7 @@ export default defineComponent({
         });
 
         // 将给定单元格的XML插入textinput 为了复制的目的
-        const copyCells = (graph: mxgraph.mxGraph, cells: any): void => {
+        const copyCells = (graph: mx.mxGraph, cells: any): void => {
           if (cells.length > 0) {
             let clones = graph.cloneCells(cells);
 
@@ -168,7 +167,7 @@ export default defineComponent({
           "cut",
           mxUtils.bind(this, (evt: any) => {
             if (graph.isEnabled() && !graph.isSelectionEmpty()) {
-              copyCells(graph, graph.removeCells());
+              copyCells(graph, graph.removeCells([]));
               dx = -gs;
               dy = -gs;
             }
@@ -179,12 +178,12 @@ export default defineComponent({
         const importXml = (xml: any, dx: any, dy: any) => {
           dx = dx != null ? dx : 0;
           dy = dy != null ? dy : 0;
-          let cells: Array<mxgraph.mxCell> = [];
+          let cells: Array<mx.mxCell> = [];
           try {
             const doc = mxUtils.parseXml(xml);
             const node = doc.documentElement;
             if (node != null) {
-              let model = new mxGraphModel();
+              let model = new mxGraphModel(graph.getDefaultParent());
               let codec = new mxCodec(node.ownerDocument);
               codec.decode(node, model);
 
@@ -216,7 +215,7 @@ export default defineComponent({
                       graph.model.getRoot()
                     )[0];
                     let children = graph.model.getChildren(parent);
-                    graph.moveCells(children, dx, dy);
+                    graph.moveCells(children, dx, dy, false);
                     cells = cells.concat(children);
                   }
                 }
@@ -234,7 +233,7 @@ export default defineComponent({
 
         // 解析 和插入 xml 到 graph
         const pasteText = (text: string): void => {
-          const xml = mxUtils.trim(text);
+          const xml = mxUtils.trim(text, '');
           let x =
             graph.container.scrollLeft / graph.view.scale -
             graph.view.translate.x;
@@ -242,7 +241,7 @@ export default defineComponent({
             graph.container.scrollTop / graph.view.scale -
             graph.view.translate.y;
 
-          if (xml.length > 0) {
+          if (xml != null && xml.length > 0) {
             if (lastPaste != xml) {
               lastPaste = xml;
               dx = 0;

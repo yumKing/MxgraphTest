@@ -6,8 +6,7 @@
 </template>
 
 <script lang="ts">
-import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
-const {
+import {
   mxGraph,
   mxClient,
   mxUtils,
@@ -15,10 +14,9 @@ const {
   mxConstants,
   mxPoint,
   mxGraphHandler,
-  mxRubberband,
-} = mxgraphFactory({
-  mxBasePath: "mxgraph",
-});
+  mxRubberband
+} from "./util/mxgraph";
+import * as mx from "mxgraph";
 
 import { defineComponent, onBeforeUnmount, onMounted, ref } from "vue";
 
@@ -29,7 +27,7 @@ export default defineComponent({
     const graphContainer = ref<Element>();
 
     const title = ref("边界");
-    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
+    let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
       initContainer();
@@ -43,7 +41,7 @@ export default defineComponent({
       if (!mxClient.isBrowserSupported()) {
         mxUtils.error("Browser is not supported!", 200, false);
       } else {
-        const container = graphContainer.value;
+        const container = graphContainer.value as HTMLElement;
         mxEvent.disableContextMenu(container);
 
         graph = new mxGraph(container);
@@ -61,7 +59,7 @@ export default defineComponent({
 
         // 删除折叠图标
         graph.isCellFoldable = (
-          cell: mxgraph.mxCell,
+          cell: mx.mxCell,
           collapse: any
         ): boolean => {
           const childCount = graph.model.getChildCount(cell);
@@ -80,7 +78,7 @@ export default defineComponent({
           state: any,
           dx: any,
           dy: any
-        ): mxgraph.mxPoint | null => {
+        ): mx.mxPoint | null => {
           if (state != null) {
             const model = graph.getModel();
             const geo = model.getGeometry(state.cell);
@@ -142,7 +140,7 @@ export default defineComponent({
         };
 
         // 替换相对子顶点的移动预览
-        graph.graphHandler.getDelta = (me: any): mxgraph.mxPoint => {
+        graph.graphHandler.getDelta = (me: any): mx.mxPoint => {
           const that = graph.graphHandler as any;
           let point = mxUtils.convertPoint(
             that.graph.container,

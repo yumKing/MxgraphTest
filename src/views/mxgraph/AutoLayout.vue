@@ -6,23 +6,18 @@
 </template>
 
 <script lang="ts">
-import { mxgraph, mxgraphFactory } from "ts-mxgraph-factory";
-const {
-  mxGraph,
+import {
+   mxGraph,
   mxClient,
   mxUtils,
   mxEvent,
   mxRubberband,
-  mxConstants,
-  mxEdgeStyle,
-  mxObjectCodec,
-} = mxgraphFactory({
-  mxBasePath: "mxgraph",
-});
+} from "./util/mxgraph";
+import * as mx from "mxgraph";
+
 
 import {
   defineComponent,
-  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -35,7 +30,7 @@ export default defineComponent({
     const graphContainer = ref<Element>();
 
     const title = ref("自动布局");
-    let graph: mxgraph.mxGraph = {} as mxgraph.mxGraph;
+    let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
       console.dir(graphContainer.value);
@@ -50,7 +45,7 @@ export default defineComponent({
       if (!mxClient.isBrowserSupported()) {
         mxUtils.error("Browser is not supported!", 200, false);
       } else {
-        const container = graphContainer.value;
+        const container = graphContainer.value as HTMLElement;
         mxEvent.disableContextMenu(container);
 
         graph = new mxGraph(container);

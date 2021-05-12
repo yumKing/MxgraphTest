@@ -64,6 +64,18 @@ const routes: Array<RouteRecordRaw> = [
         /* webpackChunkName: "clipboard" */ "../views/mxgraph/Clipboard.vue"
       ),
   },
+  {
+    path: "/graph/codec",
+    name: "Codec",
+    component: () =>
+      import(/* webpackChunkName: "codec" */ "../views/mxgraph/Codec.vue"),
+  },
+  {
+    path: "/graph/myflow",
+    name: "MyFlow",
+    component: () =>
+      import(/* webpackChunkName: "myflow" */ "../views/mxgraph/MyFlow.vue"),
+  },
 ];
 
 const router = createRouter({
