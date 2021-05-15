@@ -1,6 +1,6 @@
 # graph_diagrams
 
-## vue3.x + typescript
+## vue3.x + typescript + mxgraph
 
 ## Project setup
 
