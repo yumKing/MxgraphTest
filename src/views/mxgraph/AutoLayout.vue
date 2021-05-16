@@ -74,229 +74,67 @@ export default defineComponent({
         new mi.mxRubberband(graph);
         const parent = graph.getDefaultParent();
 
-        // 2此光滑贝塞尔曲线
-        // (mi.mxAbstractCanvas2D.prototype as any).scurveTo = () => {
-
-        // }
-
-        // mi.mxPolyline.prototype.paintCurvedLine = (c, pts) => {
-        //   c.begin();
-
-        //   const pt = pts[0];
-        //   let n = pts.length;
-
-        //   c.moveTo(pt.x, pt.y);
-
-        //   const p0 = pts[n - 2];
-        //   const p1 = pts[n - 1];
-
-        //   c.curveTo(pt.x, pt.y, p0.x, p0.y, p1.x, p1.y);
-        //   c.stroke();
-        // };
-
-        // mi.mxSvgCanvas2D.prototype.plainText = function (
-        //   x,
-        //   y,
-        //   w,
-        //   h,
-        //   str,
-        //   align,
-        //   valign,
-        //   wrap,
-        //   overflow,
-        //   clip,
-        //   rotation,
-        //   dir
-        // ) {
-        //   rotation = rotation != null ? rotation : 0;
-        //   var s = this.state;
-        //   var size = s.fontSize;
-        //   var node = this.createElement('g');
-        //   var tr = (s as any).transform || '';
-        //   this.updateFont(node);
-
-        //   // Ignores pointer events
-        //   if (!this.pointerEvents && (this as any).originalRoot == null) {
-        //     node.setAttribute('pointer-events', 'none');
-        //   }
-
-        //   // Non-rotated text
-        //   if (rotation != 0) {
-        //     tr +=
-        //       'rotate(' +
-        //       rotation +
-        //       ',' +
-        //       this.format((x * s.scale).toString()) +
-        //       ',' +
-        //       this.format((y * s.scale).toString()) +
-        //       ')';
-        //   }
-
-        //   if (dir != null) {
-        //     node.setAttribute('direction', dir);
-        //   }
-
-        //   if (clip && w > 0 && h > 0) {
-        //     let cx = x;
-        //     let cy = y;
-
-        //     if (align == mi.mxConstants.ALIGN_CENTER) {
-        //       cx -= w / 2;
-        //     } else if (align == mi.mxConstants.ALIGN_RIGHT) {
-        //       cx -= w;
-        //     }
-
-        //     if (overflow != 'fill') {
-        //       if (valign == mi.mxConstants.ALIGN_MIDDLE) {
-        //         cy -= h / 2;
-        //       } else if (valign == mi.mxConstants.ALIGN_BOTTOM) {
-        //         cy -= h;
-        //       }
-        //     }
-
-        //     // LATER: Remove spacing from clip rectangle
-        //     var c = this.createClip(
-        //       cx * s.scale - 2,
-        //       cy * s.scale - 2,
-        //       w * s.scale + 4,
-        //       h * s.scale + 4
-        //     );
-
-        //     if (this.defs != null) {
-        //       this.defs.appendChild(c);
-        //     } else {
-        //       // Makes sure clip is removed with referencing node
-        //       this.root.appendChild(c);
-        //     }
-
-        //     if (
-        //       !mi.mxClient.IS_CHROMEAPP &&
-        //       !mi.mxClient.IS_IE &&
-        //       !mi.mxClient.IS_IE11 &&
-        //       !mi.mxClient.IS_EDGE &&
-        //       this.root.ownerDocument == document
-        //     ) {
-        //       // Workaround for potential base tag
-        //       var base = this.getBaseUrl().replace(/([()])/g, '\\$1');
-        //       node.setAttribute(
-        //         'clip-path',
-        //         'url(' + base + '#' + c.getAttribute('id') + ')'
-        //       );
-        //     } else {
-        //       node.setAttribute(
-        //         'clip-path',
-        //         'url(#' + c.getAttribute('id') + ')'
-        //       );
-        //     }
-        //   }
-
-        //   // Default is left
-        //   var anchor =
-        //     align == mi.mxConstants.ALIGN_RIGHT
-        //       ? 'end'
-        //       : align == mi.mxConstants.ALIGN_CENTER
-        //       ? 'middle'
-        //       : 'start';
-
-        //   // Text-anchor start is default in SVG
-        //   if (anchor != 'start') {
-        //     node.setAttribute('text-anchor', anchor);
-        //   }
-
-        //   if (!this.styleEnabled || size != mi.mxConstants.DEFAULT_FONTSIZE) {
-        //     node.setAttribute('font-size', size * s.scale + 'px');
-        //   }
-
-        //   if (tr.length > 0) {
-        //     node.setAttribute('transform', tr);
-        //   }
-
-        //   if (s.alpha < 1) {
-        //     node.setAttribute('opacity', s.alpha.toString());
-        //   }
-
-        //   let lines = str.split('\n');
-        //   let lh = Math.round(size * mi.mxConstants.LINE_HEIGHT);
-        //   let textHeight = size + (lines.length - 1) * lh;
-
-        //   let cy = y + size - 1;
-
-        //   if (valign == mi.mxConstants.ALIGN_MIDDLE) {
-        //     if (overflow == 'fill') {
-        //       cy -= h / 2;
-        //     } else {
-        //       let dy =
-        //         (this.matchHtmlAlignment && clip && h > 0
-        //           ? Math.min(textHeight, h)
-        //           : textHeight) / 2;
-        //       cy -= dy;
-        //     }
-        //   } else if (valign == mi.mxConstants.ALIGN_BOTTOM) {
-        //     if (overflow == 'fill') {
-        //       cy -= h;
-        //     } else {
-        //       var dy =
-        //         this.matchHtmlAlignment && clip && h > 0
-        //           ? Math.min(textHeight, h)
-        //           : textHeight;
-        //       cy -= dy + 1;
-        //     }
-        //   }
-
-        //   for (var i = 0; i < lines.length; i++) {
-        //     // Workaround for bounding box of empty lines and spaces
-        //     if (
-        //       lines[i].length > 0 &&
-        //       (mi.mxUtils.trim(lines[i], '') as any).length > 0
-        //     ) {
-        //       var text = this.createElement('text');
-        //       // LATER: Match horizontal HTML alignment
-        //       text.setAttribute(
-        //         'x',
-        //         (
-        //           this.format((x * s.scale).toString()) + this.textOffset
-        //         ).toString()
-        //       );
-        //       text.setAttribute(
-        //         'y',
-        //         (
-        //           this.format((cy * s.scale).toString()) + this.textOffset
-        //         ).toString()
-        //       );
-
-        //       mi.mxUtils.write(text, lines[i]);
-        //       node.appendChild(text);
-        //     }
-
-        //     cy += lh;
-        //   }
-
-        //   this.root.appendChild(node);
-        //   this.addTextBackground(
-        //     node,
-        //     str,
-        //     x,
-        //     y,
-        //     w,
-        //     overflow == 'fill' ? h : textHeight,
-        //     align,
-        //     valign,
-        //     overflow
-        //   );
-        // };
-
-        // graph.getChildOffsetForCell = (cell):number => {
-        //     return 0
-        // }
-        // graph.view.updateFloatingTerminalPoint = () => {
-
-        // }
         // graph.view.updateEdgeLabelOffset = () => {
 
         // }
-        // graph.view.getPoint = () => {
+        graph.view.getPoint = (state, geo) => {
+          let x = state.getCenterX();
+          let y = state.getCenterY();
 
-        // }
+          // if (state.segments != null && (geo == null || geo.relative)) {
+          //   let gx = geo != null ? geo.x / 2 : 0;
+          //   let pointCount = state.absolutePoints.length;
+          //   let dist = Math.round((gx + 0.5) * state.length);
+          //   let segment = state.segments[0];
+          //   let length = 0;
+          //   let index = 1;
+
+          //   while (
+          //     dist >= Math.round(length + segment) &&
+          //     index < pointCount - 1
+          //   ) {
+          //     length += segment;
+          //     segment = state.segments[index++];
+          //   }
+
+          //   let factor = segment == 0 ? 0 : (dist - length) / segment;
+          //   let p0 = state.absolutePoints[index - 1];
+          //   let pe = state.absolutePoints[index];
+
+          //   if (p0 != null && pe != null) {
+          //     let gy = 0;
+          //     let offsetX = 0;
+          //     let offsetY = 0;
+
+          //     if (geo != null) {
+          //       gy = geo.y;
+          //       let offset = geo.offset;
+
+          //       if (offset != null) {
+          //         offsetX = offset.x;
+          //         offsetY = offset.y;
+          //       }
+          //     }
+
+          //     let dx = pe.x - p0.x;
+          //     let dy = pe.y - p0.y;
+          //     let nx = segment == 0 ? 0 : dy / segment;
+          //     let ny = segment == 0 ? 0 : dx / segment;
+
+          //     x = p0.x + dx * factor + (nx * gy + offsetX) * graph.view.scale;
+          //     y = p0.y + dy * factor - (ny * gy - offsetY) * graph.view.scale;
+          //   }
+          // } else if (geo != null) {
+          //   let offset = geo.offset;
+
+          //   if (offset != null) {
+          //     x += offset.x;
+          //     y += offset.y;
+          //   }
+          // }
+          const ponits = createBezierPoints(state.absolutePoints, 5);
+          return new mi.mxPoint(ponits[1].x, ponits[1].y);
+        };
 
         // mi.mxEdgeHandler.prototype.moveLabel = () => {
 
