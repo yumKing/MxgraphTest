@@ -77,7 +77,7 @@ export default defineComponent({
         graph.connectionHandler.createEdgeState = (me: any) => {
           const edge = graph.createEdge(
             {} as mx.mxCell,
-            '',
+            null,
             null,
             {} as mx.mxCell,
             {} as mx.mxCell

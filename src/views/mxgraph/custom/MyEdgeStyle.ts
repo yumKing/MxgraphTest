@@ -35,7 +35,8 @@ const multiPointBezier = (
   }
   return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
 };
-const createBezierPoints = (
+
+export const createBezierPoints = (
   basePoint: Array<mx.mxPoint>,
   amountPoints: number
 ): Array<mx.mxPoint> => {
