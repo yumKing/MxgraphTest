@@ -51,58 +51,72 @@ export default defineComponent({
         const edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
         edgeStyle[mxConstants.STYLE_EDGE] = mxConstants.EDGESTYLE_ORTHOGONAL;
         edgeStyle[mxConstants.STYLE_CURVED] = "1";
-        graph.edgeLabelsMovable = false;
-        graph.setConnectable(true)
-        graph.setAllowDanglingEdges(true);
-        
-        graph.setTooltips(true)
-        graph.htmlLabels = true
-        graph.vertexLabelsMovable = false
 
-        new mxKeyHandler(graph)
+        graph.setConnectable(true);
+        graph.setAllowDanglingEdges(true);
+        graph.setTooltips(true);
+        graph.edgeLabelsMovable = false;
+        graph.htmlLabels = true;
+        graph.vertexLabelsMovable = false;
+
+        new mxKeyHandler(graph);
         new mxRubberband(graph);
 
         // 不允许从父结点中移除cells
-        graph.graphHandler.removeCellsFromParent = false
+        graph.graphHandler.removeCellsFromParent = false;
         // 在添加cell时自动size
-        graph.autoSizeCellsOnAdd = true
+        graph.autoSizeCellsOnAdd = true;
 
         // 解除cell 锁定， 允许移动 相关的cells
-        graph.isCellLocked = (cell: any):boolean => {
-          return graph.isCellsLocked()
-        }
-        graph.isCellResizable = (cell:any):boolean => {
-          let geo = graph.model.getGeometry(cell)
-          return geo == null || geo.relative
-        }
+        graph.isCellLocked = (cell: any): boolean => {
+          return graph.isCellsLocked();
+        };
+        graph.isCellResizable = (cell: any): boolean => {
+          let geo = graph.model.getGeometry(cell);
+          return geo == null || geo.relative;
+        };
         // 将标签截断为顶点大小
-        graph.getLabel = (cell: any): string|Node =>{
-            let label = graph.labelsVisible ? graph.convertValueToString(cell):''
-            let geometry = graph.model.getGeometry(cell)
-            if(graph.model.isCollapsed(cell) && geometry != null && (geometry.offset == null || (geometry.offset.x == 0 && geometry.offset.y == 0)) && graph.model.isVertex(cell) && geometry.width >= 2){
-              let style = graph.getCellStyle(cell)
-              let fontSize = style[mxConstants.STYLE_FONTSIZE] || mxConstants.DEFAULT_FONTSIZE
-              let max = geometry.width/(fontSize * 0.625)
-              if(max < label.length){
-                return label.substring(0, max) + '...'
-              }
+        graph.getLabel = (cell: any): string | Node => {
+          let label = graph.labelsVisible
+            ? graph.convertValueToString(cell)
+            : "";
+          let geometry = graph.model.getGeometry(cell);
+          if (
+            graph.model.isCollapsed(cell) &&
+            geometry != null &&
+            (geometry.offset == null ||
+              (geometry.offset.x == 0 && geometry.offset.y == 0)) &&
+            graph.model.isVertex(cell) &&
+            geometry.width >= 2
+          ) {
+            let style = graph.getCellStyle(cell);
+            let fontSize =
+              style[mxConstants.STYLE_FONTSIZE] || mxConstants.DEFAULT_FONTSIZE;
+            let max = geometry.width / (fontSize * 0.625);
+            if (max < label.length) {
+              return label.substring(0, max) + "...";
             }
-            return label
-        }
+          }
+          return label;
+        };
         // 使能包装 顶点标签
-        graph.isWrapping = (cell:any) => {
-          return graph.model.isCollapsed(cell)
-        }
+        graph.isWrapping = (cell: any) => {
+          return graph.model.isCollapsed(cell);
+        };
         // 如果没有定义偏移量 使能 剪辑
-        graph.isLabelClipped = (cell: mx.mxCell):boolean => {
-          let geo = graph.model.getGeometry(cell)
-          return geo != null && !geo.relative && (geo.offset==null || geo.offset.x == 0 && geo.offset.y == 0)
-        }
+        graph.isLabelClipped = (cell: mx.mxCell): boolean => {
+          let geo = graph.model.getGeometry(cell);
+          return (
+            geo != null &&
+            !geo.relative &&
+            (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0))
+          );
+        };
 
         // 设置动态样式改变标记
         graph.getView().updateStyle = true;
         // 覆盖 mxGraphModel.getStyle 以返回指定样式(连线结束的结点样式颜色)
-        graph.model.getStyle = (cell: any): string|null => {
+        graph.model.getStyle = (cell: any): string | null => {
           const that = graph.model as any;
 
           if (cell != null) {
@@ -129,7 +143,7 @@ export default defineComponent({
 
             return style;
           }
-          return "";
+          return null;
         };
 
         var parent = graph.getDefaultParent();

@@ -24,7 +24,6 @@ import * as mx from "mxgraph";
 
 import {
   defineComponent,
-  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
