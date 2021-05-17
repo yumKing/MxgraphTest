@@ -12,7 +12,11 @@
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
     "baseUrl": ".",
-    "typeRoots": ["node_modules/@types", "node_modules/@typed-mxgraph"],
+    "typeRoots": [
+      // "src/types",
+      "node_modules/@typed-mxgraph",
+      "node_modules/@types"
+    ],
     "paths": {
       "@/*": ["src/*"]
     },

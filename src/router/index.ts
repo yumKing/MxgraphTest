@@ -80,6 +80,12 @@ const routes: Array<RouteRecordRaw> = [
         /* webpackChunkName: "autoLayout" */ '../views/mxgraph/AutoLayout.vue'
       ),
   },
+  {
+    path: '/graph/myflow',
+    name: 'MyFlow',
+    component: () =>
+      import(/* webpackChunkName: "myflow" */ '../views/mxgraph/MyFlow.vue'),
+  },
 ];
 
 const router = createRouter({

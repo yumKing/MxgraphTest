@@ -7,6 +7,7 @@
     <router-link to="/graph/clipboard">粘贴板</router-link> |
     <router-link to="/graph/edgeDynStyle">连线动态样式</router-link> |
     <router-link to="/graph/autoLayout">自动布局</router-link> |
+    <router-link to="/graph/myflow">我的流程</router-link> |
   </div>
 </template>
 

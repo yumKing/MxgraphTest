@@ -35,161 +35,215 @@ export default defineComponent({
       } else {
         const container = graphContainer.value as HTMLElement;
         mi.mxEvent.disableContextMenu(container);
-        graph = new mi.mxGraph(container);
 
-        // create new style
-        let myStyle = graph.getStylesheet().getDefaultVertexStyle();
-        // let myStyle: { [key: string]: number | string } = {};
-        // myStyle[mxConstants.STYLE_SHAPE] = mxConstants.SHAPE_RECTANGLE;
-        // myStyle[mxConstants.STYLE_OPACITY] = 50;
-        // myStyle[mxConstants.STYLE_FONTCOLOR] = "#774400";
+        // mxCellRenderer: save origin class method
+        const originInstallCellOverlayListeners =
+          mi.mxCellRenderer.prototype.installCellOverlayListeners;
+        // mxCellRenderer: override class method
+        mi.mxCellRenderer.prototype.installCellOverlayListeners = (
+          state,
+          overlay,
+          shape
+        ) => {
+          originInstallCellOverlayListeners.call(this, state, overlay, shape);
 
-        myStyle[mi.mxConstants.STYLE_PERIMETER] =
-          mi.mxConstants.PERIMETER_RECTANGLE;
-        myStyle[mi.mxConstants.STYLE_GRADIENTCOLOR] = 'white';
-        myStyle[mi.mxConstants.STYLE_PERIMETER_SPACING] = 6;
-        myStyle[mi.mxConstants.STYLE_ROUNDED] = true;
-        // myStyle[mxConstants.STYLE_SHADOW] = true;
-
-        let edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
-        // 方法一 自定义连线曲线
-        // (mi.mxStyleRegistry as any).putValue('myEdgeStyle', BezierEdgeStyle);
-        // edgeStyle[mi.mxConstants.STYLE_EDGE] = 'myEdgeStyle';
-        // 方法二 使用内置的曲线
-        edgeStyle[mi.mxConstants.STYLE_EDGE] =
-          mi.mxConstants.EDGESTYLE_ORTHOGONAL;
-        edgeStyle[mi.mxConstants.STYLE_CURVED] = '1';
-
-        edgeStyle[mi.mxConstants.STYLE_LABEL_POSITION] =
-          mi.mxConstants.ALIGN_CENTER;
-        edgeStyle[mi.mxConstants.STYLE_VERTICAL_LABEL_POSITION] =
-          mi.mxConstants.ALIGN_BOTTOM;
-        edgeStyle[mi.mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = 'gray';
-
-        // config graph
-        graph.setAllowDanglingEdges(false);
-        graph.setConnectable(false);
-        graph.setCellsResizable(false);
-
-        new mi.mxRubberband(graph);
-        const parent = graph.getDefaultParent();
-
-        // graph.view.updateEdgeLabelOffset = () => {
-
-        // }
-        graph.view.getPoint = (state, geo) => {
-          let x = state.getCenterX();
-          let y = state.getCenterY();
-
-          // if (state.segments != null && (geo == null || geo.relative)) {
-          //   let gx = geo != null ? geo.x / 2 : 0;
-          //   let pointCount = state.absolutePoints.length;
-          //   let dist = Math.round((gx + 0.5) * state.length);
-          //   let segment = state.segments[0];
-          //   let length = 0;
-          //   let index = 1;
-
-          //   while (
-          //     dist >= Math.round(length + segment) &&
-          //     index < pointCount - 1
-          //   ) {
-          //     length += segment;
-          //     segment = state.segments[index++];
-          //   }
-
-          //   let factor = segment == 0 ? 0 : (dist - length) / segment;
-          //   let p0 = state.absolutePoints[index - 1];
-          //   let pe = state.absolutePoints[index];
-
-          //   if (p0 != null && pe != null) {
-          //     let gy = 0;
-          //     let offsetX = 0;
-          //     let offsetY = 0;
-
-          //     if (geo != null) {
-          //       gy = geo.y;
-          //       let offset = geo.offset;
-
-          //       if (offset != null) {
-          //         offsetX = offset.x;
-          //         offsetY = offset.y;
-          //       }
-          //     }
-
-          //     let dx = pe.x - p0.x;
-          //     let dy = pe.y - p0.y;
-          //     let nx = segment == 0 ? 0 : dy / segment;
-          //     let ny = segment == 0 ? 0 : dx / segment;
-
-          //     x = p0.x + dx * factor + (nx * gy + offsetX) * graph.view.scale;
-          //     y = p0.y + dy * factor - (ny * gy - offsetY) * graph.view.scale;
-          //   }
-          // } else if (geo != null) {
-          //   let offset = geo.offset;
-
-          //   if (offset != null) {
-          //     x += offset.x;
-          //     y += offset.y;
-          //   }
-          // }
-          const ponits = createBezierPoints(state.absolutePoints, 5);
-          return new mi.mxPoint(ponits[1].x, ponits[1].y);
+          mi.mxEvent.addListener(
+            shape.node,
+            mi.mxClient.IS_POINTER ? 'pointerdown' : 'mousedown',
+            (evt: mx.mxEvent) => {
+              overlay.fireEvent(
+                new mi.mxEventObject(
+                  'pointerdown',
+                  'event',
+                  evt,
+                  'state',
+                  state
+                ),
+                null
+              );
+            }
+          );
+          if (mi.mxClient.IS_POINTER && mi.mxClient.IS_TOUCH) {
+            mi.mxEvent.addListener(
+              shape.node,
+              'touchstart',
+              (evt: mx.mxEvent) => {
+                overlay.fireEvent(
+                  new mi.mxEventObject(
+                    'pointerdown',
+                    'event',
+                    evt,
+                    'state',
+                    state
+                  ),
+                  null
+                );
+              }
+            );
+          }
         };
 
-        // mi.mxEdgeHandler.prototype.moveLabel = () => {
+        // 自定义添加图层
+        const addOverlay = (cell: mx.mxCell) => {
+          // 创建一个新的图层: 图片+提示
+          let overlay = new mi.mxCellOverlay(
+            new mi.mxImage('mxgraph/images/add.png', 24, 24),
+            'Add outgoing'
+          );
+          // 图层鼠标显示: 手
+          overlay.cursor = 'hand';
+          // 安装一个点击本图层的处理器
+          overlay.addListener(mi.mxEvent.CLICK, (sender, evt) => {
+            graph.clearSelection();
+            const geo = graph.getCellGeometry(cell);
+            let v2 = {} as mx.mxCell;
+            executeLayout(
+              () => {
+                v2 = graph.insertVertex(
+                  parent,
+                  null,
+                  'insertText',
+                  geo.x,
+                  geo.y,
+                  80,
+                  30
+                );
+                addOverlay(v2);
+                graph.view.refresh();
+                let e1 = graph.insertEdge(parent, null, 'connect', cell, v2);
+              },
+              () => {
+                graph.scrollCellToVisible(v2);
+              }
+            );
+          });
+          // 指定 CMS 事件
+          overlay.addListener('pointerdown', (sender, eo) => {
+            let evt2 = eo.getProperty('event');
+            let state = eo.getProperty('state');
 
-        // }
+            graph.popupMenuHandler.hideMenu();
+            graph.stopEditing(false);
+            const pt = mi.mxUtils.convertPoint(
+              graph.container,
+              mi.mxEvent.getClientX(evt2),
+              mi.mxEvent.getClientY(evt2)
+            );
+            graph.connectionHandler.start(state, pt.x, pt.y, state);
+            graph.isMouseDown = true;
+            (graph as any).isMouseTrigger = mi.mxEvent.isMouseEvent(evt2);
+          });
+
+          // 给指定的单元添加图层
+          graph.addCellOverlay(cell, overlay);
+        };
+
+        graph = new mi.mxGraph(container);
+        // 设置结点形状
+        const vertexStyle = graph.getStylesheet().getDefaultVertexStyle();
+        // vertexStyle[mi.mxConstants.STYLE_SHAPE] = mi.mxConstants.;
+        vertexStyle[mi.mxConstants.STYLE_ROUNDED] = '1';
+
+        // 设置边为曲线，且设置边的label放在曲线上
+        const edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
+        edgeStyle[mi.mxConstants.STYLE_EDGE] = mi.mxConstants.STYLE_ORTHOGONAL;
+        edgeStyle[mi.mxConstants.STYLE_CURVED] = '1';
+        graph.view.getPoint = (state, geo) => {
+          const points = createBezierPoints(state.absolutePoints, 5);
+          return new mi.mxPoint(points[2].x, points[2].y);
+        };
+        // 允许平移
+        graph.setPanning(true);
+        // 使用left 按钮平移
+        graph.panningHandler.useLeftButtonForPanning = true;
+        // 不允许拖拽边
+        graph.setAllowDanglingEdges(false);
+        // 连接点不允许选择
+        graph.connectionHandler.select = false;
+        // 设置平移量
+        const dx =
+          (graph.container.clientWidth - graph.container.offsetLeft) / 2;
+        graph.view.setTranslate(dx, 20);
+
+        // new mi.mxRubberband(graph);
+        const parent = graph.getDefaultParent();
+
         // this.graph.getModel()
         graph.getModel().beginUpdate();
+        let v1 = {} as mx.mxCell;
         try {
-          const v1 = graph.insertVertex(parent, null, 'Hello,', 20, 20, 80, 30);
-          const v2 = graph.insertVertex(
-            parent,
-            null,
-            'World!',
-            200,
-            150,
-            80,
-            30
-          );
-          const e1 = graph.insertEdge(
-            parent,
-            null,
-            'Connect',
-            v1,
-            v2,
-            'strokeColor=red'
-          );
-          // const msCanvas = new mi.mxSvgCanvas2D(
-          //   container.getElementsByTagName('svg')[0],
-          //   true
-          // );
-          // const geo = e1.getGeometry();
-
-          // msCanvas.foEnabled = true;
-          // msCanvas.textEnabled = true;
-          // msCanvas.text(
-          //   geo.getCenterX(),
-          //   geo.getCenterY(),
-          //   100,
-          //   10,
-          //   'Connection',
-          //   mi.mxConstants.ALIGN_CENTER,
-          //   mi.mxConstants.ALIGN_BOTTOM,
-          //   '',
-          //   'html',
-          //   'visible',
-          //   '',
-          //   0,
-          //   ''
-          // );
-          // 方法三:  指定连线为曲线
-          // graph.setCellStyles(mxConstants.STYLE_EDGE, mxConstants.EDGESTYLE_ORTHOGONAL, [e1])
-          // graph.setCellStyles(mxConstants.STYLE_CURVED, '1', [e1])
-          // graph.setCellStyles(mxConstants.STYLE_NOEDGESTYLE, null, [e1])
+          v1 = graph.insertVertex(parent, null, '开头语', 20, 20, 80, 30);
+          addOverlay(v1);
         } finally {
           graph.getModel().endUpdate();
         }
+
+        // 创建分层布局  mxCompactTreeLayout
+        let layout = new mi.mxHierarchicalLayout(
+          graph,
+          mi.mxConstants.DIRECTION_NORTH
+        );
+        // let layout = new mi.mxHierarchicalLayout(
+        //   graph,
+        //   mi.mxConstants.DIRECTION_NORTH
+        // );
+        // 执行自定义布局逻辑
+        const executeLayout = (change: any, post: any) => {
+          graph.getModel().beginUpdate();
+          try {
+            if (change != null) {
+              change();
+            }
+            layout.execute(graph.getDefaultParent());
+          } catch (e) {
+            throw e;
+          } finally {
+            let morph = new mi.mxMorphing(graph);
+            morph.addListener(
+              mi.mxEvent.DONE,
+              mi.mxUtils.bind(this, () => {
+                graph.getModel().endUpdate();
+                if (post != null) {
+                  post();
+                }
+              })
+            );
+            morph.startAnimation();
+          }
+        };
+        // mxEdgeHander: save origin class method
+        const originEdgeHandleConnect = mi.mxEdgeHandler.prototype.connect;
+        // mxEdgeHander: overrdie class method
+        mi.mxEdgeHandler.prototype.connect = (
+          edge,
+          terminal,
+          isSource,
+          isClone,
+          me
+        ) => {
+          const cell = originEdgeHandleConnect.apply(this, [
+            edge,
+            terminal,
+            isSource,
+            isClone,
+            me,
+          ]);
+          executeLayout(null, null);
+          return cell;
+        };
+
+        graph.resizeCell = (cell, bounds, recurse) => {
+          const cells = mi.mxGraph.prototype.resizeCell.apply(graph, [
+            cell,
+            bounds,
+            recurse,
+          ]);
+          executeLayout(null, null);
+          return cells;
+        };
+        graph.connectionHandler.addListener(mi.mxEvent.CONNECT, () => {
+          executeLayout(null, null);
+        });
       }
     };
 
