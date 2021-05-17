@@ -6,92 +6,81 @@
 </template>
 
 <script lang="ts">
-import {
-  mxGraph,
-  mxClient,
-  mxUtils,
-  mxEvent,
-  mxRubberband,
-  mxClipboard,
-  mxCodec,
-  mxGraphModel
-} from "./util/mxgraph";
-import * as mx from "mxgraph";
+import * as mx from 'mxgraph';
+import mi from './util/mxgraph';
 
-
-import { defineComponent, onBeforeUnmount, onMounted, ref } from "vue";
+import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
 
 export default defineComponent({
-  name: "Clipboard",
+  name: 'Clipboard',
   setup() {
-    console.log("create Clipboard");
+    console.log('create Clipboard');
     const graphContainer = ref<Element>();
 
-    const title = ref("粘贴板");
+    const title = ref('粘贴板');
     let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
-      console.dir(graphContainer.value);
       initContainer();
     });
 
     onBeforeUnmount(() => {
-      console.log("destroy Clipboard");
+      console.log('destroy Clipboard');
     });
 
     const initContainer = () => {
-      if (!mxClient.isBrowserSupported()) {
-        mxUtils.error("Browser is not supported!", 200, false);
+      if (!mi.mxClient.isBrowserSupported()) {
+        mi.mxUtils.error('Browser is not supported!', 200, false);
       } else {
         const container = graphContainer.value as HTMLElement;
-        mxEvent.disableContextMenu(container);
+        mi.mxEvent.disableContextMenu(container);
 
-        graph = new mxGraph(container);
+        graph = new mi.mxGraph(container);
 
         // 公共方法 for 粘贴板
-        (mxClipboard as any).cellsToString = (cells: any): string => {
-          let codec = new mxCodec();
-          let model = new mxGraphModel(graph.getDefaultParent());
+        (mi.mxClipboard as any).cellsToString = (cells: any): string => {
+          let codec = new mi.mxCodec();
+          let model = new mi.mxGraphModel(graph.getDefaultParent());
           let parent = model.getChildAt(model.getRoot(), 0);
           for (let i = 0; i < cells.length; i++) {
             model.add(parent, cells[i]);
           }
 
-          return mxUtils.getXml(codec.encode(model));
+          return mi.mxUtils.getXml(codec.encode(model));
         };
 
         //  在 ctrl 或者 元的按键事件 期间 聚焦可见的文本域
-        let textInput = document.createElement("textarea");
-        mxUtils.setOpacity(textInput, 0);
-        textInput.style.width = "1px";
-        textInput.style.height = "1px";
+        let textInput = document.createElement('textarea');
+        mi.mxUtils.setOpacity(textInput, 0);
+        textInput.style.width = '1px';
+        textInput.style.height = '1px';
         let restoreFocus = false;
         let gs = graph.gridSize;
-        let lastPaste = "";
+        let lastPaste = '';
         let dx = 0;
         let dy = 0;
-        textInput.value = " ";
+        textInput.value = ' ';
 
         // 当 ctrl 被压下处理本地粘贴行为时展示 文本
-        mxEvent.addListener(document, "keydown", (evt: any) => {
+        mi.mxEvent.addListener(document, 'keydown', (evt: any) => {
           // no dialog visible
-          let source = mxEvent.getSource(evt);
+          let source = mi.mxEvent.getSource(evt);
           if (
             graph.isEnabled() &&
             !graph.isMouseDown &&
             !graph.isEditing() &&
-            source.nodeName != "INPUT"
+            source.nodeName != 'INPUT'
           ) {
             if (
               evt.keyCode == 224 /* FF */ ||
-              (!mxClient.IS_MAC && evt.keyCode == 17) /* Control */ ||
-              (mxClient.IS_MAC &&
+              (!mi.mxClient.IS_MAC && evt.keyCode == 17) /* Control */ ||
+              (mi.mxClient.IS_MAC &&
                 (evt.keyCode == 91 || evt.keyCode == 93)) /* Left/Right Meta */
             ) {
               if (!restoreFocus) {
-                textInput.style.position = "absolute";
-                textInput.style.left = graph.container.scrollLeft + 10 + "px";
-                textInput.style.top = graph.container.scrollTop + 10 + "px";
+                textInput.style.position = 'absolute';
+                textInput.style.left = graph.container.scrollLeft + 10 + 'px';
+                textInput.style.top = graph.container.scrollTop + 10 + 'px';
                 graph.container.appendChild(textInput);
 
                 restoreFocus = true;
@@ -103,7 +92,7 @@ export default defineComponent({
         });
 
         // 恢复容器的聚焦 并从DOM中移除 textinput
-        mxEvent.addListener(document, "keyup", (evt: any) => {
+        mi.mxEvent.addListener(document, 'keyup', (evt: any) => {
           if (
             (restoreFocus && evt.keyCode == 224) ||
             evt.keyCode == 17 ||
@@ -136,7 +125,7 @@ export default defineComponent({
               }
             }
 
-            textInput.value = (mxClipboard as any).cellsToString(clones);
+            textInput.value = (mi.mxClipboard as any).cellsToString(clones);
           }
 
           textInput.select();
@@ -144,14 +133,14 @@ export default defineComponent({
         };
 
         // 通过放置选择的XML到textInput 处理copy事件
-        mxEvent.addListener(
+        mi.mxEvent.addListener(
           textInput,
-          "copy",
-          mxUtils.bind(this, (evt: any) => {
+          'copy',
+          mi.mxUtils.bind(this, (evt: any) => {
             if (graph.isEnabled() && !graph.isSelectionEmpty()) {
               copyCells(
                 graph,
-                mxUtils.sortCells(
+                mi.mxUtils.sortCells(
                   graph.model.getTopmostCells(graph.getSelectionCells())
                 )
               );
@@ -162,10 +151,10 @@ export default defineComponent({
         );
 
         // 处理 cut 事件
-        mxEvent.addListener(
+        mi.mxEvent.addListener(
           textInput,
-          "cut",
-          mxUtils.bind(this, (evt: any) => {
+          'cut',
+          mi.mxUtils.bind(this, (evt: any) => {
             if (graph.isEnabled() && !graph.isSelectionEmpty()) {
               copyCells(graph, graph.removeCells([]));
               dx = -gs;
@@ -180,11 +169,11 @@ export default defineComponent({
           dy = dy != null ? dy : 0;
           let cells: Array<mx.mxCell> = [];
           try {
-            const doc = mxUtils.parseXml(xml);
+            const doc = mi.mxUtils.parseXml(xml);
             const node = doc.documentElement;
             if (node != null) {
-              let model = new mxGraphModel(graph.getDefaultParent());
-              let codec = new mxCodec(node.ownerDocument);
+              let model = new mi.mxGraphModel(graph.getDefaultParent());
+              let codec = new mi.mxCodec(node.ownerDocument);
               codec.decode(node, model);
 
               let childCount = model.getChildCount(model.getRoot());
@@ -233,7 +222,7 @@ export default defineComponent({
 
         // 解析 和插入 xml 到 graph
         const pasteText = (text: string): void => {
-          const xml = mxUtils.trim(text, '');
+          const xml = mi.mxUtils.trim(text, '');
           let x =
             graph.container.scrollLeft / graph.view.scale -
             graph.view.translate.x;
@@ -251,7 +240,7 @@ export default defineComponent({
               dy += gs;
             }
 
-            if (xml.substring(0, 14) == "<mxGraphModel>") {
+            if (xml.substring(0, 14) == '<mxGraphModel>') {
               graph.setSelectionCells(importXml(xml, dx, dy));
               graph.scrollCellToVisible(graph.getSelectionCell());
             }
@@ -269,17 +258,17 @@ export default defineComponent({
                 (document as any).documentMode == 10 ||
                 (document as any).documentMode == 11
               ) {
-                data = provider.getData("Text");
+                data = provider.getData('Text');
               } else {
                 data =
-                  mxUtils.indexOf(provider.types, "text/html") >= 0
-                    ? provider.getData("text/html")
+                  mi.mxUtils.indexOf(provider.types, 'text/html') >= 0
+                    ? provider.getData('text/html')
                     : null;
                 if (
-                  mxUtils.indexOf(provider.types, "text/plain") &&
+                  mi.mxUtils.indexOf(provider.types, 'text/plain') &&
                   (data == null || data.length == 0)
                 ) {
-                  data = provider.getData("text/plain");
+                  data = provider.getData('text/plain');
                 }
               }
             }
@@ -288,15 +277,15 @@ export default defineComponent({
         };
 
         // 处理粘贴事件 在解析和插入xml时
-        mxEvent.addListener(textInput, "paste", (evt: any) => {
-          textInput.value = "";
+        mi.mxEvent.addListener(textInput, 'paste', (evt: any) => {
+          textInput.value = '';
           if (graph.isEnabled()) {
             let xml = extractGraphModelFromEvent(evt);
             if (xml != null && xml.length > 0) {
               pasteText(xml);
             } else {
               window.setTimeout(
-                mxUtils.bind(this, () => {
+                mi.mxUtils.bind(this, () => {
                   pasteText(textInput.value);
                 }),
                 0
@@ -306,15 +295,15 @@ export default defineComponent({
           textInput.select();
         });
 
-        new mxRubberband(graph);
+        new mi.mxRubberband(graph);
         var parent = graph.getDefaultParent();
 
         // this.graph.getModel()
         graph.getModel().beginUpdate();
         try {
-          var v1 = graph.insertVertex(parent, null, "Hello,", 20, 20, 80, 30);
-          var v2 = graph.insertVertex(parent, null, "World!", 200, 150, 80, 30);
-          graph.insertEdge(parent, "", "", v1, v2, "noLabel=1;strokeColor=red");
+          var v1 = graph.insertVertex(parent, null, 'Hello,', 20, 20, 80, 30);
+          var v2 = graph.insertVertex(parent, null, 'World!', 200, 150, 80, 30);
+          graph.insertEdge(parent, '', '', v1, v2, 'noLabel=1;strokeColor=red');
         } finally {
           graph.getModel().endUpdate();
         }

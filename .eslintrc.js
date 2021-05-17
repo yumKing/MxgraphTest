@@ -1,35 +1,35 @@
 module.exports = {
   root: true,
   env: {
-    node: true
+    node: true,
   },
   extends: [
     'plugin:vue/essential',
     'eslint:recommended',
-    "@vue/prettier",
-    "@vue/prettier/@typescript-eslint",
-    '@vue/typescript/recommended'
+    '@vue/prettier',
+    '@vue/prettier/@typescript-eslint',
+    '@vue/typescript/recommended',
   ],
   parserOptions: {
-    ecmaVersion: 2020
+    ecmaVersion: 2020,
   },
   rules: {
-    "@typescript-eslint/no-explicit-any": ["off"],
-    "@typescript-eslint/no-this-alias": ["off"],
-    "@typescript-eslint/no-unused-vars": ["off"],
-    "@typescript-eslint/no-empty-function": ["off"],
-    "@typescript-eslint/member-delimiter-style": ["off"],
-    "@typescript-eslint/camelcase": ["off"],
-    "space-before-function-paren": [0, "always"],
-    "no-useless-constructor": 0,
-    "prefer-rest-params": 0,
-    "new-cap": 0,
-    "lines-between-class-members": [0, "always"],
+    '@typescript-eslint/no-explicit-any': ['off'],
+    '@typescript-eslint/no-this-alias': ['off'],
+    '@typescript-eslint/no-unused-vars': ['off'],
+    '@typescript-eslint/no-empty-function': ['off'],
+    '@typescript-eslint/member-delimiter-style': ['off'],
+    '@typescript-eslint/camelcase': ['off'],
+    'space-before-function-paren': [0, 'always'],
+    'no-useless-constructor': 0,
+    'prefer-rest-params': 0,
+    'new-cap': 0,
+    'lines-between-class-members': [0, 'always'],
     'no-console': process.env.NODE_ENV === 'production' ? 'off' : 'off',
-    'no-debugger': process.env.NODE_ENV === 'production' ? 'off' : 'off'
-  }
-}
-  /**
+    'no-debugger': process.env.NODE_ENV === 'production' ? 'off' : 'off',
+  },
+};
+/**
    * "no-alert": 0,//禁止使用alert confirm prompt
 "no-array-constructor": 2,//禁止使用数组构造器
 "no-bitwise": 0,//禁止使用按位运算符

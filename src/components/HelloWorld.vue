@@ -111,11 +111,14 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRefs } from "vue";
+import { defineComponent, toRefs } from 'vue';
 
 export default defineComponent({
   props: {
-    msg: String
+    msg: {
+      type: String,
+      default: '',
+    },
   },
   // setup(props) {
   //   const { msg } = toRefs(props);

@@ -6,7 +6,7 @@ module.exports = {
   productionSourceMap: true,
 
   css: {
-    loaderOptions: {}
+    loaderOptions: {},
   },
 
   //  see https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-pwa
@@ -65,8 +65,6 @@ module.exports = {
 
   //  第三方插件配置
   pluginOptions: {
-
     //  ...
-
-  }
-}
+  },
+};

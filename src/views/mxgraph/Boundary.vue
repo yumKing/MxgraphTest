@@ -6,27 +6,18 @@
 </template>
 
 <script lang="ts">
-import {
-  mxGraph,
-  mxClient,
-  mxUtils,
-  mxEvent,
-  mxConstants,
-  mxPoint,
-  mxGraphHandler,
-  mxRubberband
-} from "./util/mxgraph";
-import * as mx from "mxgraph";
+import * as mx from 'mxgraph';
+import mi from './util/mxgraph';
 
-import { defineComponent, onBeforeUnmount, onMounted, ref } from "vue";
+import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
 
 export default defineComponent({
-  name: "Boundary",
+  name: 'Boundary',
   setup() {
-    console.log("create Boundary");
+    console.log('create Boundary');
     const graphContainer = ref<Element>();
 
-    const title = ref("边界");
+    const title = ref('边界');
     let graph: mx.mxGraph = {} as mx.mxGraph;
 
     onMounted(() => {
@@ -34,34 +25,31 @@ export default defineComponent({
     });
 
     onBeforeUnmount(() => {
-      console.log("destroy Boundary");
+      console.log('destroy Boundary');
     });
 
     const initContainer = () => {
-      if (!mxClient.isBrowserSupported()) {
-        mxUtils.error("Browser is not supported!", 200, false);
+      if (!mi.mxClient.isBrowserSupported()) {
+        mi.mxUtils.error('Browser is not supported!', 200, false);
       } else {
         const container = graphContainer.value as HTMLElement;
-        mxEvent.disableContextMenu(container);
+        mi.mxEvent.disableContextMenu(container);
 
-        graph = new mxGraph(container);
+        graph = new mi.mxGraph(container);
 
         // 设置所有顶点的基本样式
         const style = graph.getStylesheet().getDefaultVertexStyle();
-        style[mxConstants.STYLE_ROUNDED] = true;
-        style[mxConstants.STYLE_FILLCOLOR] = "#ffffff";
-        style[mxConstants.STYLE_STROKECOLOR] = "#000000";
-        style[mxConstants.STYLE_STROKEWIDTH] = "2";
-        style[mxConstants.STYLE_FONTCOLOR] = "#000000";
-        style[mxConstants.STYLE_FONTSIZE] = "12";
-        style[mxConstants.STYLE_FONTSTYLE] = 1;
+        style[mi.mxConstants.STYLE_ROUNDED] = true;
+        style[mi.mxConstants.STYLE_FILLCOLOR] = '#ffffff';
+        style[mi.mxConstants.STYLE_STROKECOLOR] = '#000000';
+        style[mi.mxConstants.STYLE_STROKEWIDTH] = '2';
+        style[mi.mxConstants.STYLE_FONTCOLOR] = '#000000';
+        style[mi.mxConstants.STYLE_FONTSIZE] = '12';
+        style[mi.mxConstants.STYLE_FONTSTYLE] = 1;
         graph.getStylesheet().putDefaultVertexStyle(style);
 
         // 删除折叠图标
-        graph.isCellFoldable = (
-          cell: mx.mxCell,
-          collapse: any
-        ): boolean => {
+        graph.isCellFoldable = (cell: mx.mxCell, collapse: any): boolean => {
           const childCount = graph.model.getChildCount(cell);
           for (let i = 0; i < childCount; i++) {
             const child = graph.model.getChildAt(cell, i);
@@ -108,7 +96,7 @@ export default defineComponent({
                     y = y > 0.5 ? 1 : 0;
                   }
 
-                  return new mxPoint(x, y);
+                  return new mi.mxPoint(x, y);
                 }
               }
             }
@@ -134,7 +122,7 @@ export default defineComponent({
 
               graph.model.setGeometry(cell, geo);
             } else {
-              mxGraph.prototype.translateCell.apply(graph, arguments as any);
+              mi.mxGraph.prototype.translateCell.apply(graph, arguments as any);
             }
           }
         };
@@ -142,12 +130,12 @@ export default defineComponent({
         // 替换相对子顶点的移动预览
         graph.graphHandler.getDelta = (me: any): mx.mxPoint => {
           const that = graph.graphHandler as any;
-          let point = mxUtils.convertPoint(
+          let point = mi.mxUtils.convertPoint(
             that.graph.container,
             me.getX(),
             me.getY()
           );
-          let delta = new mxPoint(
+          let delta = new mi.mxPoint(
             point.x - that.first.x,
             point.y - that.first.y
           );
@@ -165,7 +153,7 @@ export default defineComponent({
                 that.graph.model.getParent(state.cell)
               );
               if (pstate != null) {
-                delta = new mxPoint(
+                delta = new mi.mxPoint(
                   pstate.x + pstate.width * rel.x - state.getCenterX(),
                   pstate.y + pstate.height * rel.y - state.getCenterY()
                 );
@@ -186,7 +174,7 @@ export default defineComponent({
           return (
             cells.length == 0 &&
             !cells[0].geometry.relative &&
-            mxGraphHandler.prototype.shouldRemoveCellsFromParent.apply(
+            mi.mxGraphHandler.prototype.shouldRemoveCellsFromParent.apply(
               that,
               arguments as any
             )
@@ -198,35 +186,35 @@ export default defineComponent({
           return false;
         };
 
-        new mxRubberband(graph);
+        new mi.mxRubberband(graph);
         var parent = graph.getDefaultParent();
 
         graph.getModel().beginUpdate();
         try {
-          var v1 = graph.insertVertex(parent, null, "Process", 60, 60, 90, 40);
+          var v1 = graph.insertVertex(parent, null, 'Process', 60, 60, 90, 40);
           var v2 = graph.insertVertex(
             v1,
             null,
-            "in",
+            'in',
             0,
             0.5,
             20,
             20,
-            "fontSize=9;shape=ellipse;resizable=0;"
+            'fontSize=9;shape=ellipse;resizable=0;'
           );
-          v2.geometry.offset = new mxPoint(-10, -10);
+          v2.geometry.offset = new mi.mxPoint(-10, -10);
           v2.geometry.relative = true;
           var v3 = graph.insertVertex(
             v1,
             null,
-            "out",
+            'out',
             1,
             0.5,
             20,
             20,
-            "fontSize=9;shape=ellipse;resizable=0;"
+            'fontSize=9;shape=ellipse;resizable=0;'
           );
-          v3.geometry.offset = new mxPoint(-10, -10);
+          v3.geometry.offset = new mi.mxPoint(-10, -10);
           v3.geometry.relative = true;
         } finally {
           graph.getModel().endUpdate();

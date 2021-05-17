@@ -1,31 +1,33 @@
 <template>
   <div class="graph-test">
     <div class="title">{{ title }}</div>
-    
   </div>
 </template>
 
 <script lang="ts">
-
-import { defineComponent, onBeforeUnmount, onMounted, reactive,toRefs, getCurrentInstance} from "vue";
+import {
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  toRefs,
+  getCurrentInstance,
+} from 'vue';
 
 export default defineComponent({
   // components: {  },
-  name: "MyFlow",
+  name: 'MyFlow',
   setup() {
-    const { curThis } = getCurrentInstance() as any
+    const { curThis } = getCurrentInstance() as any;
     const state = reactive({
-      title: '简单聊天窗'
+      title: '简单聊天窗',
     });
 
     onMounted(() => {
-      console.log(state.title)
+      console.log(state.title);
     });
 
-    onBeforeUnmount(() => {
-    });
-
-
+    onBeforeUnmount(() => {});
 
     return {
       ...toRefs(state),

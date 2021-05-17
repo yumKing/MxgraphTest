@@ -1,6 +1,6 @@
 import factory from 'mxgraph';
 const mx = factory({
-    mxBasePath: 'mxgraph'
+  mxBasePath: 'mxgraph',
 });
 export default mx;
 export const mxClient = mx.mxClient;
@@ -78,7 +78,8 @@ export const mxGraphHierarchyEdge = mx.mxGraphHierarchyEdge;
 export const mxGraphHierarchyModel = mx.mxGraphHierarchyModel;
 export const mxSwimlaneModel = mx.mxSwimlaneModel;
 export const mxHierarchicalLayoutStage = mx.mxHierarchicalLayoutStage;
-export const mxMedianHybridCrossingReduction = mx.mxMedianHybridCrossingReduction;
+export const mxMedianHybridCrossingReduction =
+  mx.mxMedianHybridCrossingReduction;
 export const mxMinimumCycleRemover = mx.mxMinimumCycleRemover;
 export const mxCoordinateAssignment = mx.mxCoordinateAssignment;
 export const mxSwimlaneOrdering = mx.mxSwimlaneOrdering;
