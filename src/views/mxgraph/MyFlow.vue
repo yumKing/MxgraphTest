@@ -101,7 +101,6 @@ export default defineComponent({
         new mi.mxKeyHandler(graph);
         new mi.mxRubberband(graph);
 
-        
         // // 将标签截断为顶点大小
         graph.getLabel = (cell) => {
           let label = graph.labelsVisible
@@ -209,7 +208,6 @@ export default defineComponent({
           mi.mxUtils.alert('DoubleClick: ' + (cell != null ? 'Cell' : 'Graph'));
           evt.consume();
         });
-
         var parent = graph.getDefaultParent();
 
         // this.graph.getModel()
