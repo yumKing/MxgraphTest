@@ -8,6 +8,7 @@
 <script lang="ts">
 import * as mx from 'mxgraph';
 import mi from './util/mxgraph';
+import { createBezierPoints } from './custom/MyEdgeStyle';
 
 import {
   defineComponent,
@@ -51,6 +52,10 @@ export default defineComponent({
         edgeStyle[mi.mxConstants.STYLE_EDGE] =
           mi.mxConstants.EDGESTYLE_ORTHOGONAL;
         edgeStyle[mi.mxConstants.STYLE_CURVED] = '1';
+        graph.view.getPoint = (state, geo) => {
+          const points = createBezierPoints(state.absolutePoints, 5);
+          return new mi.mxPoint(points[2].x, points[2].y);
+        };
 
         graph.getView().updateStyle = true;
 

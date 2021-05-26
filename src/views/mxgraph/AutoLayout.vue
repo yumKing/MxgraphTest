@@ -36,15 +36,15 @@ export default defineComponent({
         const container = graphContainer.value as HTMLElement;
         mi.mxEvent.disableContextMenu(container);
 
-        // mxCellRenderer: save origin class method
+        // record origin method
         const originInstallCellOverlayListeners =
           mi.mxCellRenderer.prototype.installCellOverlayListeners;
         // mxCellRenderer: override class method
-        mi.mxCellRenderer.prototype.installCellOverlayListeners = (
+        mi.mxCellRenderer.prototype.installCellOverlayListeners = function (
           state,
           overlay,
           shape
-        ) => {
+        ) {
           originInstallCellOverlayListeners.call(this, state, overlay, shape);
 
           mi.mxEvent.addListener(
@@ -154,7 +154,7 @@ export default defineComponent({
         };
         // 允许平移
         graph.setPanning(true);
-        // 使用left 按钮平移
+        // 使用鼠标左键平移, web上似乎没有作用
         graph.panningHandler.useLeftButtonForPanning = true;
         // 不允许拖拽边
         graph.setAllowDanglingEdges(false);
@@ -212,16 +212,16 @@ export default defineComponent({
           }
         };
         // mxEdgeHander: save origin class method
-        const originEdgeHandleConnect = mi.mxEdgeHandler.prototype.connect;
+        const originConnect = mi.mxEdgeHandler.prototype.connect;
         // mxEdgeHander: overrdie class method
-        mi.mxEdgeHandler.prototype.connect = (
+        mi.mxEdgeHandler.prototype.connect = function (
           edge,
           terminal,
           isSource,
           isClone,
           me
-        ) => {
-          const cell = originEdgeHandleConnect.apply(this, [
+        ) {
+          const cell = originConnect.apply(this, [
             edge,
             terminal,
             isSource,
