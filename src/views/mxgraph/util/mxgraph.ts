@@ -1,5 +1,11 @@
-import factory, { mxGraph, mxCell } from 'mxgraph';
-import { createBezierPoints } from '../custom/MyEdgeStyle';
+import factory, {
+  mxGraph,
+  mxCell,
+  mxPoint,
+  mxRectangle,
+  mxAbstractCanvas2D,
+  mxCellState,
+} from 'mxgraph';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
 const mi = factory({
@@ -8,6 +14,11 @@ const mi = factory({
 
 export default mi;
 
+/**
+ * 创建一个基本的graph
+ * @param container
+ * @returns
+ */
 export function createGraph(container: HTMLElement): mxGraph {
   // 不允许内置的上下文菜单
   mi.mxEvent.disableContextMenu(container);
@@ -175,5 +186,205 @@ export function createGraph(container: HTMLElement): mxGraph {
   // // 设置动态样式改变标记
   graph.getView().updateStyle = true;
 
+  // 鼠标左键按住平移整个图形
+  graph.setAutoSizeCells(true);
+  graph.setPanning(true);
+  graph.panningHandler.useLeftButtonForPanning = true;
+
+  //设置节点可以折叠
+  graph.isCellFoldable = function (cell) {
+    return this.model.getOutgoingEdges(cell).length > 0;
+  };
+
   return graph;
 }
+
+/**
+ * 自定义节点形状，折叠功能
+ * @param graph
+ */
+class TreeNodeShape extends mi.mxCylinder {
+  segment = 20;
+
+  public constructor() {
+    super(null as any, '', '');
+  }
+
+  public apply(state: mxCellState) {
+    super.apply(state);
+    this.state = state;
+  }
+
+  public redrawPath(
+    path: mxAbstractCanvas2D,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    isForeground: boolean
+  ) {
+    if (this.state != null) {
+      const graph = this.state.view.graph;
+      const hasChildren =
+        graph.model.getOutgoingEdges(this.state.cell).length > 0;
+
+      if (isForeground) {
+        if (hasChildren) {
+          // Painting outside of vertex bounds is used here
+          path.moveTo(w / 2, h + this.segment);
+          path.lineTo(w / 2, h);
+          path.end();
+        }
+      } else {
+        path.moveTo(0, 0);
+        path.lineTo(w, 0);
+        path.lineTo(w, h);
+        path.lineTo(0, h);
+        path.close();
+      }
+    }
+  }
+}
+
+export function setTreeNodeShape(graph: mxGraph) {
+  mi.mxCellRenderer.registerShape('treeNodeShape', TreeNodeShape);
+
+  // Defines a custom perimeter for the nodes in the tree
+  mi.mxGraphView.prototype.updateFloatingTerminalPoint = function (
+    edge,
+    start,
+    end,
+    source
+  ) {
+    var pt = null;
+
+    if (source) {
+      pt = new mi.mxPoint(
+        start.x + start.width / 2,
+        start.y + start.height + TreeNodeShape.prototype.segment
+      );
+    } else {
+      pt = new mi.mxPoint(start.x + start.width / 2, start.y);
+    }
+
+    edge.setAbsoluteTerminalPoint(pt, source);
+  };
+
+  // 配置自定义形状
+  const style = graph.getStylesheet().getDefaultVertexStyle();
+  style[mi.mxConstants.STYLE_SHAPE] = 'treeNodeShape';
+  // 设置折叠图标
+  mi.mxGraph.prototype.collapsedImage = new mi.mxImage(
+    'mxgraph/images/collapsed.gif',
+    9,
+    9
+  );
+  mi.mxGraph.prototype.expandedImage = new mi.mxImage(
+    'mxgraph/images/expanded.gif',
+    9,
+    9
+  );
+  // 定义折叠图标的位置
+  graph.cellRenderer.getControlBounds = function (state) {
+    if (state.control != null) {
+      var oldScale = state.control.scale;
+      var w = state.control.bounds.width / oldScale;
+      var h = state.control.bounds.height / oldScale;
+      var s = state.view.scale;
+
+      return new mi.mxRectangle(
+        state.x + state.width / 2 - (w / 2) * s,
+        state.y +
+          state.height +
+          TreeNodeShape.prototype.segment * s -
+          (h / 2) * s,
+        w * s,
+        h * s
+      );
+    }
+
+    return {} as mxRectangle;
+  };
+  const toggleSubtree = function (
+    graph: mxGraph,
+    cell: mxCell,
+    show?: boolean
+  ) {
+    show = show != null ? show : true;
+    const cells: Array<mxCell> = [];
+
+    graph.traverse(cell, true, (vertex: mxCell) => {
+      if (vertex != cell) {
+        cells.push(vertex);
+      }
+
+      // Stops recursion if a collapsed cell is seen
+      return vertex == cell || !graph.isCellCollapsed(vertex);
+    });
+
+    graph.toggleCells(show, cells, true);
+  };
+
+  // 折叠图标点击折叠
+  graph.foldCells = function (collapse, recurse, cells) {
+    this.model.beginUpdate();
+    try {
+      toggleSubtree(this, cells[0], !collapse);
+      this.model.setCollapsed(cells[0], collapse);
+
+      // // Executes the layout for the new graph since
+      // // changes to visiblity and collapsed state do
+      // // not trigger a layout in the current manager.
+      // layout.execute(graph.getDefaultParent());
+    } finally {
+      this.model.endUpdate();
+    }
+
+    return [];
+  };
+}
+
+// 生成贝塞尔曲线点 ============================== START
+const binomialBezier = (start: number, end: number): number => {
+  let cs = 1;
+  let bcs = 1;
+  while (end > 0) {
+    cs *= start;
+    bcs *= end;
+    start--;
+    end--;
+  }
+  return cs / bcs;
+};
+const multiPointBezier = (basePoint: Array<mxPoint>, t: number): mxPoint => {
+  const len = basePoint.length;
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < len; i++) {
+    const p = basePoint[i];
+    x +=
+      p.x *
+      Math.pow(1 - t, len - 1 - i) *
+      Math.pow(t, i) *
+      binomialBezier(len - 1, i);
+    y +=
+      p.y *
+      Math.pow(1 - t, len - 1 - i) *
+      Math.pow(t, i) *
+      binomialBezier(len - 1, i);
+  }
+  return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
+};
+
+export const createBezierPoints = (
+  basePoint: Array<mxPoint>,
+  amountPoints: number
+): Array<mxPoint> => {
+  const points: Array<mxPoint> = [];
+  for (let i = 0; i < amountPoints; i++) {
+    points.push(multiPointBezier(basePoint, i / amountPoints));
+  }
+
+  return points;
+};
+// 生成贝塞尔曲线点 ============================== END
