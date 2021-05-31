@@ -7,7 +7,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onBeforeUnmount, ref } from 'vue';
+import { computed, defineComponent, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 import HelloWorld from '@/components/HelloWorld.vue'; // @ is an alias to /src
 
 export default defineComponent({
@@ -15,6 +15,21 @@ export default defineComponent({
   components: {
     HelloWorld,
   },
+
+  // props: {
+  //   name: String,
+  //   success: { type: String },
+  //   callback: {
+  //     type: Function as PropType<() => void>
+  //   },
+  //   message: {
+  //     type: Object as PropType<ComplexMessage>,
+  //     required: true,
+  //     validator(message: ComplexMessage) {
+  //       return !!message.title
+  //     }
+  //   }
+  // }
 
   setup(props, context) {
     let msg = ref('Welcome to Your Vue.js + TypeScript App');
@@ -28,6 +43,28 @@ export default defineComponent({
     onBeforeUnmount(() => {
       console.log('close home component');
     });
+
+    // 计算属性
+    const count = ref(1)
+    // const propsCount = computed({
+    //   get: () => count.value + 1,
+    //   set: val => count.value = val -1
+    // });
+    // 监听属性
+    // const stop = watchEffect(() => console.log(count.value))
+    // setTimeout(() => count.value++, 100)
+    // 主动停止帧听
+    // stop()
+
+    // 注册 清除函数， 在id改变时暂停fetchData函数执行，等改变完成再执行
+    // const data = ref(null)
+    // watchEffect(async onInvalidate => {
+    //   onInvalidate(() => {...}) // 我们在Promise解析之前注册清除函数
+    //   data.value = await fetchData(props.id)
+    // }， { onTrigger(e){debugger}})
+
+    // watch( count, (count,preCount) => {})
+    // watch( [fooRef, barRef], ([fooRef, barRef],[preFooRef, preBarRef]) => {})
 
     const test = (): void => {
       msg.value = 'test' + Math.floor(Math.random() * 10);
@@ -49,12 +86,6 @@ export default defineComponent({
 
   // },
 
-  // created() {
-
-  // },
-  // beforeUnmount() {
-
-  // },
   // methods: {
   //   test() {
 

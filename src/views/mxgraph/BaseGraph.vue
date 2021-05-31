@@ -53,7 +53,7 @@ export default defineComponent({
         try {
           var v1 = graph.insertVertex(parent, null, 'Hello,', 20, 20, 80, 30);
           var v2 = graph.insertVertex(parent, null, 'World!', 200, 150, 80, 30);
-          graph.insertEdge(parent, '', '', v1, v2, 'noLabel=1;strokeColor=red');
+          graph.insertEdge(parent, '', '12455', v1, v2, 'strokeColor=red');
         } finally {
           graph.getModel().endUpdate();
         }
