@@ -1,72 +1,17 @@
-import factory, { mxGraph } from 'mxgraph';
+import factory, { mxGraph, mxCell } from 'mxgraph';
+import { createBezierPoints } from '../custom/MyEdgeStyle';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
 const mi = factory({
   mxBasePath: 'mxgraph',
 });
 
-// 创建一个基础的graph对象，并设置基础的样式
+export default mi;
+
 export function createGraph(container: HTMLElement): mxGraph {
   // 不允许内置的上下文菜单
   mi.mxEvent.disableContextMenu(container);
 
-  // 添加边的连接点约束
-  // mi.mxShape.prototype.constraints = [
-  //   // left
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(0, 0.25), true),
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(0, 0.5), true),
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(0, 0.75), true),
-
-  //   // top
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(0.25, 0), true),
-  //   new mi.mxConnectionConstraint(new mi.mxPoint(0.5, 0), true),
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(0.75, 0), true),
-
-  //   // bottom
-  //   new mi.mxConnectionConstraint(new mi.mxPoint(0.25, 1), true),
-  //   new mi.mxConnectionConstraint(new mi.mxPoint(0.5, 1), true),
-  //   new mi.mxConnectionConstraint(new mi.mxPoint(0.75, 1), true),
-
-  //   // right
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(1, 0.25), true),
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(1, 0.5), true),
-  //   // new mi.mxConnectionConstraint(new mi.mxPoint(1, 0.75), true),
-  // ];
-  // mi.mxPolyline.prototype.constraints = [];
-  // // graph 处理获取所有连接点约束
-  // mi.mxGraph.prototype.getAllConnectionConstraints = (
-  //   terminal,
-  //   source
-  // ) => {
-  //   if (terminal != null && terminal.shape != null) {
-  //     if (terminal.shape.stencil != null) {
-  //       // 如果该结点的形状是根据指定模板创建的，且模板里的约束点
-  //       if (terminal.shape.stencil.constraints != null) {
-  //         return terminal.shape.stencil.constraints;
-  //       }
-  //     } else if (terminal.shape.constraints != null) {
-  //       // 返回结点本身的形状中的约束点
-  //       return terminal.shape.constraints;
-  //     }
-  //   }
-
-  //   return [];
-  // };
-
-  // 捕捉结点固定点，限定连线点只能是指定位置的端点
-  // 如果 icon形状的矩形与mouse矩形有交叉，则返回true
-  // mi.mxConstraintHandler.prototype.intersects = (
-  //   icon,
-  //   mouse,
-  //   source,
-  //   existingEdge
-  // ) => {
-  //   return (
-  //     !source ||
-  //     existingEdge != null ||
-  //     mi.mxUtils.intersects(icon.bounds, mouse)
-  //   );
-  // };
   mi.mxConnectionHandler.prototype.connectImage = new mi.mxImage(
     'mxgraph/images/connector.gif',
     16,
@@ -103,8 +48,7 @@ export function createGraph(container: HTMLElement): mxGraph {
 
   // 设置 连线样式为曲线
   const edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
-  edgeStyle[mi.mxConstants.STYLE_EDGE] =
-    mi.mxConstants.EDGESTYLE_ORTHOGONAL;
+  edgeStyle[mi.mxConstants.STYLE_EDGE] = mi.mxConstants.EDGESTYLE_ORTHOGONAL;
   edgeStyle[mi.mxConstants.STYLE_CURVED] = '1';
   // 设置曲线上的label位置
   graph.view.getPoint = (state, geo) => {
@@ -112,8 +56,7 @@ export function createGraph(container: HTMLElement): mxGraph {
     return new mi.mxPoint(ponits[2].x, ponits[2].y);
   };
   // 设置边的终端箭头样式
-  edgeStyle[mi.mxConstants.STYLE_ENDARROW] =
-    mi.mxConstants.ARROW_OPEN_THIN;
+  edgeStyle[mi.mxConstants.STYLE_ENDARROW] = mi.mxConstants.ARROW_OPEN_THIN;
   // 边线条粗细
   edgeStyle[mi.mxConstants.STYLE_STROKECOLOR] = 'rgb(170, 183, 196)';
   edgeStyle[mi.mxConstants.STYLE_STROKEWIDTH] = 2;
@@ -130,6 +73,15 @@ export function createGraph(container: HTMLElement): mxGraph {
   // edgeStyle[mi.mxConstants.STYLE_FONTSTYLE] = '1';
   // 和enableHtmlLabel 配合使用
   // edgeStyle[mi.mxConstants.STYLE_WHITE_SPACE] = 'wrap';
+
+  // 设置容器画布大小
+  // Optional disabling of sizing
+  // graph.setCellsResizable(false);
+  // Configures the graph contains to resize and
+  // add a border at the bottom, right
+  // graph.setResizeContainer(true);
+  // graph.minimumContainerSize = new mxRectangle(0, 0, 500, 380);
+  // graph.setBorder(60);
 
   // 结点允许连线
   graph.setConnectable(true);
@@ -157,39 +109,8 @@ export function createGraph(container: HTMLElement): mxGraph {
   // 允许HTML label
   graph.setHtmlLabels(true);
 
-  // 动态生成连接点
-  // const ports: Array<any> = [];
-  // ports.push({
-  //   id: 's',
-  //   x: 0.5,
-  //   y: 1,
-  //   perimeter: true,
-  //   constraint: 'south',
-  // });
-  // graph.getAllConnectionConstraints = function (terminal, source) {
-  //   if (
-  //     terminal != null &&
-  //     terminal.shape != null &&
-  //     terminal.shape.stencil != null
-  //   ) {
-  //     return terminal.shape.stencil.constraints;
-  //   } else if (terminal != null && this.model.isVertex(terminal.cell)) {
-  //     if (terminal.shape != null) {
-  //       const cstrs: Array<mx.mxConnectionConstraint> = [];
-  //       for (let index in ports) {
-  //         const pt = ports[index];
-  //         let cstr: any = new mi.mxConnectionConstraint(
-  //           new mi.mxPoint(pt.x, pt.y),
-  //           pt.perimeter
-  //         );
-  //         cstr.id = pt.id;
-  //         cstrs.push(cstr);
-  //       }
-  //       return cstrs;
-  //     }
-  //   }
-  //   return [];
-  // };
+  // 将节点约束在父节点内，不允许跑到父节点范围外
+  graph.constrainChildren = true;
 
   // 配套使用，当连线没有指向目标结点，则创建目标结点, 默认是copy边的源作为目地结点
   graph.connectionHandler.createTarget = true;
@@ -290,11 +211,58 @@ export function createGraph(container: HTMLElement): mxGraph {
   //   }
   // };
 
+  // const originSelectionCells = graph.connectionHandler.selectCells;
+  // graph.connectionHandler.selectCells = function (edge, target) {
+  //   edge.setValue('请设置意图');
+  //   graph.refresh();
+  //   console.log('edge: ', edge, target);
+  //   originSelectionCells.call(this, edge, target);
+  // };
+
+  // 鼠标键盘事件处理
+  new mi.mxKeyHandler(graph);
+  // 矩形区域选框及事件处理
+  new mi.mxRubberband(graph);
+
+  // 边的标签不可编辑
+  graph.isCellEditable = function (cell) {
+    return !this.getModel().isEdge(cell);
+  };
+
+  // // 将标签截断为结点大小
+  graph.getLabel = (cell) => {
+    let label = graph.labelsVisible ? graph.convertValueToString(cell) : '';
+    let geometry = graph.model.getGeometry(cell);
+    if (
+      !graph.model.isCollapsed(cell) &&
+      geometry != null &&
+      (geometry.offset == null ||
+        (geometry.offset.x == 0 && geometry.offset.y == 0)) &&
+      graph.model.isVertex(cell) &&
+      geometry.width >= 2
+    ) {
+      let style = graph.getCellStyle(cell);
+      let fontSize =
+        style[mi.mxConstants.STYLE_FONTSIZE] || mi.mxConstants.DEFAULT_FONTSIZE;
+      let max = geometry.width / (fontSize * 0.625);
+      if (max < label.length) {
+        return label.substring(0, max) + '...';
+      }
+    }
+    return label;
+  };
+  // 如果没有定义偏移量 使能 剪辑
+  graph.isLabelClipped = (cell: mxCell): boolean => {
+    let geo = graph.model.getGeometry(cell);
+    return (
+      geo != null &&
+      !geo.relative &&
+      (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0))
+    );
+  };
+
+  // // 设置动态样式改变标记
+  graph.getView().updateStyle = true;
+
   return graph;
 }
-
-
-
-export default mi;
-
-
