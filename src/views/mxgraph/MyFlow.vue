@@ -11,8 +11,11 @@
 <script lang="ts">
 import mi, { createGraph } from './util/mxgraph';
 import * as mx from 'mxgraph';
+import TestApi from '@/api/test';
 
-import { defineComponent, onBeforeUnmount, onMounted, ref } from 'vue';
+import { defineComponent, onBeforeUnmount, onMounted, ref, getCurrentInstance } from 'vue';
+import { useRoute, useRouter,onBeforeRouteUpdate } from 'vue-router';
+import { useStore, mapState } from 'vuex';
 
 export default defineComponent({
   name: 'MyFlow',
@@ -31,11 +34,27 @@ export default defineComponent({
     // 关系信息
     const nodeRelation = ref<Array<any>>([]);
 
-    // 判断是否地址有参数，有则说明是加载已有的画布，否则是新的画布
+    // 判断路由过来是否有参数，有则说明是加载已有的画布，否则是新的画布
     // 有参数则调用获取画布数据接口，返回节点和节点关系信息数据，并将节点绘制在画布中
     // 无参数，则在空白画布上创建一个空白的节点
+    const cc = getCurrentInstance();
+    console.log("当前实例: ", cc);
 
-    // validate.html : 校验节点不能连接到已有的源上
+    // 获取路由信息
+    const route = useRoute()
+    // const router = useRouter()
+    // console.log("当前路由: ", route, "路由实例: ", router);
+    console.log("path: ", route.fullPath, "param: ", route.params, "query: ", route.query)
+
+    // if(route.params){
+    //   nodesList.value = await TestApi.getNodeList(route.params);
+    // }else{
+
+    // }
+
+    onBeforeRouteUpdate( (guard) => {
+      console.log("路由发生变化", guard);
+    })
 
     onMounted(() => {
       initContainer();
@@ -50,6 +69,9 @@ export default defineComponent({
         mi.mxUtils.error('Browser is not supported!', 200, false);
       } else {
         const container = graphContainer.value as HTMLElement;
+        // const xmlDoc = mi.mxUtils.createXmlDocument()
+        // const sourceNode = xmlDoc.createElement("Source");
+
         graph = createGraph(container);
 
         var parent = graph.getDefaultParent();
@@ -67,7 +89,7 @@ export default defineComponent({
             30,
             'fillColor=white'
           );
-          v1.collapsed = true;
+          v1.setAttribute("root", true)
           nodesList.value.push({
             id: v1.getId(),
             xpos: v1.getGeometry().x,
@@ -91,7 +113,7 @@ export default defineComponent({
             target.collapsed = true;
 
             // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
-            if (target.getValue() == null || target.getValue() === '') {
+            if (target.getValue() === '开头语句填写') {
               target.setValue('请输入文本');
             }
             // const edgeStyle = graph.getCellStyle(edge);
@@ -114,12 +136,22 @@ export default defineComponent({
             nodeRelation.value.push(relation);
           }
         );
-      }
-    };
 
-    const showNode = () => {
-      console.log('结点列表', nodesList.value);
-      console.log('关系列表', nodeRelation.value);
+
+        // 添加放大缩小
+        // var btn1 = mi.mxUtils.button('+', function()
+				// {
+				// 	graph.zoomIn();
+				// });
+        // btn1.setAttribute("style", "margin-left: 20px")
+				// // btn1.style.marginLeft = '20px';
+				// document.body.appendChild(btn1);
+				// document.body.appendChild(mi.mxUtils.button('-', function()
+				// {
+				// 	graph.zoomOut();
+				// }));
+
+      }
     };
 
     return {

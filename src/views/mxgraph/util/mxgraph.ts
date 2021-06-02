@@ -114,73 +114,17 @@ export function createGraph(container: HTMLElement): mxGraph {
 
   // 配套使用，当连线没有指向目标结点，则创建目标结点, 默认是copy边的源作为目地结点
   graph.connectionHandler.createTarget = true;
-  // const originCreateTargetVertex =
-  //   graph.connectionHandler.createTargetVertex;
-  // graph.connectionHandler.createTargetVertex = function (evt, source) {
-  //   const target = originCreateTargetVertex.call(this, evt, source);
 
-  //   // ports.push({ id: 'st' ,x: 0.75, y: 1, perimeter: true, constraint: 'southt' });
-  //   target.setValue('请输入文本');
-  //   return target;
-  // };
-
-  // 目标边界点
-  // const originConnect = graph.connectionHandler.connect
-  // graph.connectionHandler.connect = function(source, target, evt, dropTarget){
-
-  //   console.log("source111: ", this.sourceConstraint)
-  //   console.log("target111: ", this.constraintHandler.currentConstraint)
-
-  //   originConnect.call(this,source, target, evt, dropTarget)
+  // // 只允许结点可以折叠
+  // graph.isCellFoldable = function(cell: mxCell,collapse:boolean){
+  //   return this.getModel().isVertex(cell)
   // }
-  // const originMouseDown = graph.connectionHandler.mouseDown;
-  // graph.connectionHandler.mouseDown = function(sender, me){
-  //   originMouseDown.call(this,sender, me)
-  //   console.log("source: ", this.sourceConstraint)
+  // // 折叠的结点不允许连接
+  // graph.isCellConnectable = function(cell){
+  //   return !this.isCellCollapsed(cell);
   // }
-  // const originMouseUp = graph.connectionHandler.mouseUp;
-  // graph.connectionHandler.mouseUp = function(sender, me){
-  //     originMouseUp.call(this, sender,me)
-
-  //     console.log("source: ", this.sourceConstraint)
-  // }
-  // const originRest = graph.connectionHandler.reset;
-  // graph.connectionHandler.reset = function () {
-  //   console.log('connectHandle:', this);
-  //   const that = this as any;
-  //   console.log(
-  //     that.previous,
-  //     that.constraintHandler.currentConstraint,
-  //     that.currentState != null ? that.currentState.cell: 'null'
-  //   );
-  //   originRest.call(this);
-  // };
-  
-  // const originTragetPoint = graph.connectionHandler.getTargetPerimeterPoint;
-  // graph.connectionHandler.getTargetPerimeterPoint = function(state, me){
-  //     const point = originTragetPoint.call(this, state, me)
-  //     console.log("target: ",point)
-  //     return point
-  // }
-  // graph.connectionHandler.targetConnectImage;
-  // graph.connectionHandler.getEdgeColor;
-  // graph.connectionHandler.getEdgeWidth;
-  // 源边界点
-  // const originSourcePoint = graph.connectionHandler.getSourcePerimeterPoint;
-  // graph.connectionHandler.getSourcePerimeterPoint = function(state, next,me){
-  //   const point = originSourcePoint.call(this, state, next, me)
-  //   console.log("source: ",point)
-  //   return point
-  // }
-  // graph.connectionHandler.sourceConstraint;
-  // graph.connectionHandler.constraintHandler.currentConstraint
 
   // 将无周长的边的连接点设置为固定点
-  // const originUpdatePoints = graph.view.updatePoints;
-  // graph.view.updatePoints = function(edge, points, source, target){
-  //   originUpdatePoints.call(this, edge, points, source, target)
-  //   console.log("edge: ", edge)
-  // }
   // graph.view.updateFixedTerminalPoint = (
   //   edge,
   //   terminal,
@@ -220,7 +164,36 @@ export function createGraph(container: HTMLElement): mxGraph {
   // };
 
   // 鼠标键盘事件处理
-  new mi.mxKeyHandler(graph);
+  const keyHandler = new mi.mxKeyHandler(graph);
+  const originSelectCells = graph.getSelectionCells;
+  graph.getSelectionCells = function () {
+    const selectCells = originSelectCells.call(this);
+    if (selectCells != null && selectCells.length > 0) {
+      return selectCells.filter((cell) => !cell.getAttribute('root', false));
+    }
+    return selectCells;
+  };
+  keyHandler.bindKey(46, (evt) => {
+    if (graph.isEnabled()) {
+      graph.removeCells(null as any, true);
+    }
+
+    console.log('evt: ', evt);
+  });
+  const originKeyDown = mi.mxKeyHandler.prototype.keyDown;
+  keyHandler.keyDown = function (evt) {
+    console.log(
+      'keydown, code: ',
+      evt.keyCode,
+      evt.key, // 一般键
+      evt.metaKey, // windows键
+      evt.shiftKey, // shift
+      evt.ctrlKey, // ctrl
+      evt.altKey // alt
+    );
+    return originKeyDown.call(this, evt);
+  };
+
   // 矩形区域选框及事件处理
   new mi.mxRubberband(graph);
 
@@ -263,6 +236,10 @@ export function createGraph(container: HTMLElement): mxGraph {
 
   // // 设置动态样式改变标记
   graph.getView().updateStyle = true;
+
+  // 校验连线
+  // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
+  // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => graph.validateGraph(null as any, null))
 
   return graph;
 }
