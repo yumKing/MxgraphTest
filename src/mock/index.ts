@@ -12,6 +12,6 @@ Mock.XHR.prototype.send = function () {
   this.proxy_send(...arguments);
 };
 
-Mock.mock(/\/getNodeList/, 'post', NodeApi.getNodeList);
+Mock.mock(/\/getNodeInfoList/, 'post', NodeApi.getNodeList);
 
 export default Mock;

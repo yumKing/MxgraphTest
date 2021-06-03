@@ -1,10 +1,13 @@
-import request from './request'
+import api from './request'
+import { AxiosObservable } from './myaxios/axios-observable.interface'
+// import { Observable } from 'rxjs';
+import {ajax} from 'rxjs/ajax'
 
 export default class TestApi {
 
-    static getNodeList(data: any){
-        return request({
-            url: '/getNodeList',
+    static getNodeInfoList(data: any): AxiosObservable<any>{
+        return api.request({
+            url: '/getNodeInfoList',
             method: 'post',
             data
         });

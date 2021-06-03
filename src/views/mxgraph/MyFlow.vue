@@ -3,19 +3,31 @@
     <div class="title">
       {{ title }}
       <div @click="showNodeInfo()">展示结点信息</div>
+      <div @click="saveNodeInfo()">保存结点信息</div>
     </div>
     <div ref="graphContainer" class="graph"></div>
   </div>
 </template>
 
 <script lang="ts">
-import mi, { createGraph } from './util/mxgraph';
-import * as mx from 'mxgraph';
-import TestApi from '@/api/test';
-
-import { defineComponent, onBeforeUnmount, onMounted, ref, getCurrentInstance } from 'vue';
-import { useRoute, useRouter,onBeforeRouteUpdate } from 'vue-router';
+import {
+  defineComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  onBeforeMount,
+  getCurrentInstance,
+} from 'vue';
+import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useStore, mapState } from 'vuex';
+
+import mi, { createGraph, createNode, createRelation } from './util/mxgraph';
+import * as mx from 'mxgraph';
+import * as rx from 'rxjs';
+import * as op from 'rxjs/operators';
+
+import TestApi from '@/api/test';
+import { NodeInfo, RelationInfo } from './model/node.model';
 
 export default defineComponent({
   name: 'MyFlow',
@@ -30,34 +42,52 @@ export default defineComponent({
     let graph: mx.mxGraph = {} as mx.mxGraph;
 
     // 结点信息
-    const nodesList = ref<Array<any>>([]);
+    const nodesList = ref<Array<NodeInfo>>([]);
     // 关系信息
-    const nodeRelation = ref<Array<any>>([]);
+    const nodeRelations = ref<Array<RelationInfo>>([]);
+    const graphNodes = ref<Array<mx.mxCell>>([])
+    const graphRelations = ref<Array<mx.mxCell>>([])
 
     // 判断路由过来是否有参数，有则说明是加载已有的画布，否则是新的画布
     // 有参数则调用获取画布数据接口，返回节点和节点关系信息数据，并将节点绘制在画布中
     // 无参数，则在空白画布上创建一个空白的节点
     const cc = getCurrentInstance();
-    console.log("当前实例: ", cc);
+    console.log('当前实例: ', cc);
 
     // 获取路由信息
-    const route = useRoute()
+    const route = useRoute();
     // const router = useRouter()
     // console.log("当前路由: ", route, "路由实例: ", router);
-    console.log("path: ", route.fullPath, "param: ", route.params, "query: ", route.query)
+    console.log(
+      'path: ',
+      route.fullPath,
+      'param: ',
+      route.params,
+      'query: ',
+      route.query
+    );
+    // const flowId = route.params.id
+    const flowId = route.query.id;
 
-    // if(route.params){
-    //   nodesList.value = await TestApi.getNodeList(route.params);
-    // }else{
 
-    // }
-
-    onBeforeRouteUpdate( (guard) => {
-      console.log("路由发生变化", guard);
-    })
+    onBeforeRouteUpdate((guard) => {
+      console.log('路由发生变化', guard);
+    });
 
     onMounted(() => {
-      initContainer();
+      if (flowId) {
+        TestApi.getNodeInfoList(route.params)
+          .pipe(
+            op.catchError((err) => rx.of('error')),
+            op.map<any, any>((res) => res.data),
+            op.tap( (data) => {
+              nodesList.value = data.nodesList;
+              nodeRelations.value = data.nodeRelations;
+              initContainer();
+            })
+          )
+          .subscribe();
+      }
     });
 
     onBeforeUnmount(() => {
@@ -74,34 +104,6 @@ export default defineComponent({
 
         graph = createGraph(container);
 
-        var parent = graph.getDefaultParent();
-        graph.getModel().beginUpdate();
-        try {
-          const date = new Date();
-          // 初始化时 就得添加一个结点，并返回id设置到结点id中
-          var v1 = graph.insertVertex(
-            parent,
-            null,
-            '开头语句填写',
-            400,
-            20,
-            180,
-            30,
-            'fillColor=white'
-          );
-          v1.setAttribute("root", true)
-          nodesList.value.push({
-            id: v1.getId(),
-            xpos: v1.getGeometry().x,
-            ypos: v1.getGeometry().y,
-            content: v1.getValue(),
-            soundRecordable: false,
-            hasVariable: false,
-          });
-        } finally {
-          graph.getModel().endUpdate();
-        }
-
         // 添加一个连结监听器，监听到连接的节点和边的信息
         graph.connectionHandler.addListener(
           mi.mxEvent.CONNECT,
@@ -111,6 +113,7 @@ export default defineComponent({
             const source = graph.getModel().getTerminal(edge, true);
             const target = graph.getModel().getTerminal(edge, false);
             target.collapsed = true;
+            edge.setId(source.getId() + '_' + target.getId())
 
             // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
             if (target.getValue() === '开头语句填写') {
@@ -126,31 +129,88 @@ export default defineComponent({
               soundRecordable: false,
               hasVariable: false,
             };
+            
             const relation = {
+              id: edge.getId(),
               sourceId: source.getId(),
               targetId: target.getId(),
               intent: edge.getValue(),
             };
 
+            graphNodes.value.push(target);
+            graphRelations.value.push(edge);
+
             nodesList.value.push(targetNode);
-            nodeRelation.value.push(relation);
+            nodeRelations.value.push(relation);
           }
         );
+        
+        if (flowId) {
+          // 将获取的结点和边初始化
+          graphNodes.value = nodesList.value.reduce(
+            (previos: Array<mx.mxCell>, current: NodeInfo) => {
+              return previos.concat(createNode(graph, current));
+            },
+            []
+          );
+          graphRelations.value = nodeRelations.value.reduce(
+            (previos: Array<mx.mxCell>, current: RelationInfo) => {
+              return previos.concat(createRelation(graph, current));
+            },
+            []
+          );
 
+
+
+
+          // rx.of(nodesList.value).pipe(
+
+          //   op.tap( nodes => {
+
+          //   })
+          // ).subscribe();
+        } else {
+          const parent = graph.getDefaultParent();
+          graph.getModel().beginUpdate();
+          try {
+            const date = new Date();
+            // 初始化时 就得添加一个结点，并返回id设置到结点id中
+            const v1 = graph.insertVertex(
+              parent,
+              null,
+              '开头语句填写',
+              400,
+              20,
+              180,
+              30
+            );
+            nodesList.value.push({
+              id: v1.getId(),
+              xpos: v1.getGeometry().x,
+              ypos: v1.getGeometry().y,
+              content: v1.getValue(),
+              soundRecordable: false,
+              hasVariable: false,
+            });
+
+            graphNodes.value.push(v1);
+          } finally {
+            graph.getModel().endUpdate();
+          }
+        }
 
         // 添加放大缩小
         // var btn1 = mi.mxUtils.button('+', function()
-				// {
-				// 	graph.zoomIn();
-				// });
+        // {
+        // 	graph.zoomIn();
+        // });
         // btn1.setAttribute("style", "margin-left: 20px")
-				// // btn1.style.marginLeft = '20px';
-				// document.body.appendChild(btn1);
-				// document.body.appendChild(mi.mxUtils.button('-', function()
-				// {
-				// 	graph.zoomOut();
-				// }));
-
+        // // btn1.style.marginLeft = '20px';
+        // document.body.appendChild(btn1);
+        // document.body.appendChild(mi.mxUtils.button('-', function()
+        // {
+        // 	graph.zoomOut();
+        // }));
       }
     };
 
@@ -158,14 +218,19 @@ export default defineComponent({
       graphContainer,
       title,
       nodesList,
-      nodeRelation,
+      nodeRelations,
+      graphNodes,
+      graphRelations
     };
   },
 
   methods: {
     showNodeInfo() {
-      console.log('info: ', this.nodesList, this.nodeRelation);
+      console.log('info: ', this.nodesList, this.nodeRelations);
     },
+    saveNodeInfo(){
+      console.log("graph: ", this.graphNodes, this.graphRelations)
+    }
   },
 });
 </script>

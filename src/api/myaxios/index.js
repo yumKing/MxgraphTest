@@ -59,5 +59,5 @@ class Axios {
 Axios.defaults = axios.defaults;
 Axios.interceptors = axios.interceptors;
 export default Axios;
-export { Axios };
+// export { Axios }
 //# sourceMappingURL=index.js.map

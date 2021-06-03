@@ -1,5 +1,6 @@
 import factory, { mxGraph, mxCell } from 'mxgraph';
 import { createBezierPoints } from '../custom/MyEdgeStyle';
+import { NodeInfo, RelationInfo } from '../model/node.model';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
 const mi = factory({
@@ -22,6 +23,8 @@ export function createGraph(container: HTMLElement): mxGraph {
   // config graph
   // 设置结点样式
   const vertexStyle = graph.getStylesheet().getDefaultVertexStyle();
+  // 结点填充
+  vertexStyle[mi.mxConstants.STYLE_FILLCOLOR] = 'white';
   // 端口约束
   vertexStyle[mi.mxConstants.STYLE_PORT_CONSTRAINT] = 'northsouth';
   // 边缘为圆角
@@ -111,6 +114,9 @@ export function createGraph(container: HTMLElement): mxGraph {
 
   // 将节点约束在父节点内，不允许跑到父节点范围外
   graph.constrainChildren = true;
+  // graph.setResizeContainer(false);
+  // graph.centerZoom = true;
+  // graph.extendParentsOnAdd = false
 
   // 配套使用，当连线没有指向目标结点，则创建目标结点, 默认是copy边的源作为目地结点
   graph.connectionHandler.createTarget = true;
@@ -198,14 +204,14 @@ export function createGraph(container: HTMLElement): mxGraph {
   new mi.mxRubberband(graph);
 
   // 边的标签不可编辑
-  graph.isCellEditable = function (cell) {
-    return !this.getModel().isEdge(cell);
-  };
+  // graph.isCellEditable = function (cell) {
+  //   return !this.getModel().isEdge(cell);
+  // };
 
   // // 将标签截断为结点大小
   graph.getLabel = (cell) => {
-    let label = graph.labelsVisible ? graph.convertValueToString(cell) : '';
-    let geometry = graph.model.getGeometry(cell);
+    const label = graph.labelsVisible ? graph.convertValueToString(cell) : '';
+    const geometry = graph.model.getGeometry(cell);
     if (
       !graph.model.isCollapsed(cell) &&
       geometry != null &&
@@ -214,10 +220,10 @@ export function createGraph(container: HTMLElement): mxGraph {
       graph.model.isVertex(cell) &&
       geometry.width >= 2
     ) {
-      let style = graph.getCellStyle(cell);
-      let fontSize =
+      const style = graph.getCellStyle(cell);
+      const fontSize =
         style[mi.mxConstants.STYLE_FONTSIZE] || mi.mxConstants.DEFAULT_FONTSIZE;
-      let max = geometry.width / (fontSize * 0.625);
+        const max = geometry.width / (fontSize * 0.625);
       if (max < label.length) {
         return label.substring(0, max) + '...';
       }
@@ -226,7 +232,7 @@ export function createGraph(container: HTMLElement): mxGraph {
   };
   // 如果没有定义偏移量 使能 剪辑
   graph.isLabelClipped = (cell: mxCell): boolean => {
-    let geo = graph.model.getGeometry(cell);
+    const geo = graph.model.getGeometry(cell);
     return (
       geo != null &&
       !geo.relative &&
@@ -242,4 +248,44 @@ export function createGraph(container: HTMLElement): mxGraph {
   // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => graph.validateGraph(null as any, null))
 
   return graph;
+}
+
+export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
+  const parent = graph.getDefaultParent();
+  graph.getModel().beginUpdate();
+  let cell = {} as mxCell;
+  try {
+    // 初始化时 就得添加一个结点，并返回id设置到结点id中
+    cell = graph.insertVertex(
+      parent,
+      info.id,
+      info.content,
+      info.xpos,
+      info.ypos,
+      180,
+      30
+    );
+  } finally {
+    graph.getModel().endUpdate();
+  }
+  return cell;
+}
+
+export function createRelation(graph: mxGraph, info: RelationInfo): mxCell {
+  const parent = graph.getDefaultParent();
+  graph.getModel().beginUpdate();
+  let cell = {} as mxCell;
+  try {
+    // 初始化时 就得添加一个结点，并返回id设置到结点id中
+    cell = graph.insertEdge(
+      parent,
+      info.id,
+      info.intent,
+      graph.getModel().getCell(info.sourceId),
+      graph.getModel().getCell(info.targetId)
+    );
+  } finally {
+    graph.getModel().endUpdate();
+  }
+  return cell;
 }

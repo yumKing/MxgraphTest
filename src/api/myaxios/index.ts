@@ -81,4 +81,4 @@ class Axios {
 }
 
 export default Axios
-export { Axios }
+// export { Axios }
