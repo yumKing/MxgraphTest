@@ -45,8 +45,8 @@ export default defineComponent({
     const nodesList = ref<Array<NodeInfo>>([]);
     // 关系信息
     const nodeRelations = ref<Array<RelationInfo>>([]);
-    const graphNodes = ref<Array<mx.mxCell>>([])
-    const graphRelations = ref<Array<mx.mxCell>>([])
+    const graphNodes = ref<Array<mx.mxCell>>([]);
+    const graphRelations = ref<Array<mx.mxCell>>([]);
 
     // 判断路由过来是否有参数，有则说明是加载已有的画布，否则是新的画布
     // 有参数则调用获取画布数据接口，返回节点和节点关系信息数据，并将节点绘制在画布中
@@ -69,32 +69,41 @@ export default defineComponent({
     // const flowId = route.params.id
     const flowId = route.query.id;
 
-
     onBeforeRouteUpdate((guard) => {
       console.log('路由发生变化', guard);
     });
 
     onMounted(() => {
-      if (flowId) {
-        TestApi.getNodeInfoList(route.params)
-          .pipe(
-            op.catchError((err) => rx.of('error')),
-            op.map<any, any>((res) => res.data),
-            op.tap( (data) => {
-              nodesList.value = data.nodesList;
-              nodeRelations.value = data.nodeRelations;
-              initContainer();
-            })
-          )
-          .subscribe();
-      }
+      rx.of(flowId)
+        .pipe(
+          op.tap(() => initGraph()),
+          op.map((fid) => {
+            if (!fid) {
+              defaultCanvas();
+              return false;
+            } else {
+              return true;
+            }
+          }),
+          op.filter((x) => x),
+          op.take(1),
+          op.switchMap(() => TestApi.getNodeInfoList(route.params)),
+          op.catchError((err) => rx.of('error')),
+          op.map<any, any>((res) => res.data),
+          op.tap((data) => {
+            nodesList.value = data.nodesList;
+            nodeRelations.value = data.nodeRelations;
+            dataInit();
+          })
+        )
+        .subscribe();
     });
 
     onBeforeUnmount(() => {
       console.log('destroy MyFlow');
     });
 
-    const initContainer = () => {
+    const initGraph = () => {
       if (!mi.mxClient.isBrowserSupported()) {
         mi.mxUtils.error('Browser is not supported!', 200, false);
       } else {
@@ -113,7 +122,7 @@ export default defineComponent({
             const source = graph.getModel().getTerminal(edge, true);
             const target = graph.getModel().getTerminal(edge, false);
             target.collapsed = true;
-            edge.setId(source.getId() + '_' + target.getId())
+            edge.setId(source.getId() + '_' + target.getId());
 
             // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
             if (target.getValue() === '开头语句填写') {
@@ -129,7 +138,7 @@ export default defineComponent({
               soundRecordable: false,
               hasVariable: false,
             };
-            
+
             const relation = {
               id: edge.getId(),
               sourceId: source.getId(),
@@ -144,60 +153,6 @@ export default defineComponent({
             nodeRelations.value.push(relation);
           }
         );
-        
-        if (flowId) {
-          // 将获取的结点和边初始化
-          graphNodes.value = nodesList.value.reduce(
-            (previos: Array<mx.mxCell>, current: NodeInfo) => {
-              return previos.concat(createNode(graph, current));
-            },
-            []
-          );
-          graphRelations.value = nodeRelations.value.reduce(
-            (previos: Array<mx.mxCell>, current: RelationInfo) => {
-              return previos.concat(createRelation(graph, current));
-            },
-            []
-          );
-
-
-
-
-          // rx.of(nodesList.value).pipe(
-
-          //   op.tap( nodes => {
-
-          //   })
-          // ).subscribe();
-        } else {
-          const parent = graph.getDefaultParent();
-          graph.getModel().beginUpdate();
-          try {
-            const date = new Date();
-            // 初始化时 就得添加一个结点，并返回id设置到结点id中
-            const v1 = graph.insertVertex(
-              parent,
-              null,
-              '开头语句填写',
-              400,
-              20,
-              180,
-              30
-            );
-            nodesList.value.push({
-              id: v1.getId(),
-              xpos: v1.getGeometry().x,
-              ypos: v1.getGeometry().y,
-              content: v1.getValue(),
-              soundRecordable: false,
-              hasVariable: false,
-            });
-
-            graphNodes.value.push(v1);
-          } finally {
-            graph.getModel().endUpdate();
-          }
-        }
 
         // 添加放大缩小
         // var btn1 = mi.mxUtils.button('+', function()
@@ -214,13 +169,66 @@ export default defineComponent({
       }
     };
 
+    const dataInit = () => {
+      // 将获取的结点和边初始化
+      graphNodes.value = nodesList.value.reduce(
+        (previos: Array<mx.mxCell>, current: NodeInfo) => {
+          return previos.concat(createNode(graph, current));
+        },
+        []
+      );
+      graphRelations.value = nodeRelations.value.reduce(
+        (previos: Array<mx.mxCell>, current: RelationInfo) => {
+          return previos.concat(createRelation(graph, current));
+        },
+        []
+      );
+
+      // rx.of(nodesList.value).pipe(
+
+      //   op.tap( nodes => {
+
+      //   })
+      // ).subscribe();
+    };
+
+    const defaultCanvas = () => {
+      const parent = graph.getDefaultParent();
+      graph.getModel().beginUpdate();
+      try {
+        const date = new Date();
+        // 初始化时 就得添加一个结点，并返回id设置到结点id中
+        const v1 = graph.insertVertex(
+          parent,
+          null,
+          '开头语句填写',
+          400,
+          20,
+          180,
+          30
+        );
+        nodesList.value.push({
+          id: v1.getId(),
+          xpos: v1.getGeometry().x,
+          ypos: v1.getGeometry().y,
+          content: v1.getValue(),
+          soundRecordable: false,
+          hasVariable: false,
+        });
+
+        graphNodes.value.push(v1);
+      } finally {
+        graph.getModel().endUpdate();
+      }
+    };
+
     return {
       graphContainer,
       title,
       nodesList,
       nodeRelations,
       graphNodes,
-      graphRelations
+      graphRelations,
     };
   },
 
@@ -228,9 +236,9 @@ export default defineComponent({
     showNodeInfo() {
       console.log('info: ', this.nodesList, this.nodeRelations);
     },
-    saveNodeInfo(){
-      console.log("graph: ", this.graphNodes, this.graphRelations)
-    }
+    saveNodeInfo() {
+      console.log('graph: ', this.graphNodes, this.graphRelations);
+    },
   },
 });
 </script>
