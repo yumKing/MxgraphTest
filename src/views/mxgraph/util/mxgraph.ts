@@ -1,5 +1,4 @@
-import factory, { mxGraph, mxCell } from 'mxgraph';
-import { createBezierPoints } from '../custom/MyEdgeStyle';
+import factory, { mxGraph, mxCell, mxPoint } from 'mxgraph';
 import { NodeInfo, RelationInfo } from '../model/node.model';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
@@ -9,6 +8,11 @@ const mi = factory({
 
 export default mi;
 
+/**
+ * 创建一个基本的graph
+ * @param container
+ * @returns
+ */
 export function createGraph(container: HTMLElement): mxGraph {
   // 不允许内置的上下文菜单
   mi.mxEvent.disableContextMenu(container);
@@ -246,6 +250,11 @@ export function createGraph(container: HTMLElement): mxGraph {
   // 校验连线
   // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
   // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => graph.validateGraph(null as any, null))
+  // 鼠标左键按住平移整个图形
+  graph.setAutoSizeCells(true);
+  graph.setPanning(true);
+  graph.panningHandler.useLeftButtonForPanning = true;
+
 
   return graph;
 }
@@ -289,3 +298,48 @@ export function createRelation(graph: mxGraph, info: RelationInfo): mxCell {
   }
   return cell;
 }
+
+// 生成贝塞尔曲线点 ============================== START
+const binomialBezier = (start: number, end: number): number => {
+  let cs = 1;
+  let bcs = 1;
+  while (end > 0) {
+    cs *= start;
+    bcs *= end;
+    start--;
+    end--;
+  }
+  return cs / bcs;
+};
+const multiPointBezier = (basePoint: Array<mxPoint>, t: number): mxPoint => {
+  const len = basePoint.length;
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < len; i++) {
+    const p = basePoint[i];
+    x +=
+      p.x *
+      Math.pow(1 - t, len - 1 - i) *
+      Math.pow(t, i) *
+      binomialBezier(len - 1, i);
+    y +=
+      p.y *
+      Math.pow(1 - t, len - 1 - i) *
+      Math.pow(t, i) *
+      binomialBezier(len - 1, i);
+  }
+  return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
+};
+
+export const createBezierPoints = (
+  basePoint: Array<mxPoint>,
+  amountPoints: number
+): Array<mxPoint> => {
+  const points: Array<mxPoint> = [];
+  for (let i = 0; i < amountPoints; i++) {
+    points.push(multiPointBezier(basePoint, i / amountPoints));
+  }
+
+  return points;
+};
+// 生成贝塞尔曲线点 ============================== END

@@ -7,8 +7,7 @@
 
 <script lang="ts">
 import * as mx from 'mxgraph';
-import mi from './util/mxgraph';
-import { createBezierPoints } from './custom/MyEdgeStyle';
+import mi, { createBezierPoints } from './util/mxgraph';
 
 import {
   defineComponent,

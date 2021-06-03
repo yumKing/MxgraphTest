@@ -102,43 +102,6 @@ export function createGraph(container) {
     graph.constrainChildren = true;
     // 配套使用，当连线没有指向目标结点，则创建目标结点, 默认是copy边的源作为目地结点
     graph.connectionHandler.createTarget = true;
-    // // 只允许结点可以折叠
-    // graph.isCellFoldable = function(cell: mxCell,collapse:boolean){
-    //   return this.getModel().isVertex(cell)
-    // }
-    // // 折叠的结点不允许连接
-    // graph.isCellConnectable = function(cell){
-    //   return !this.isCellCollapsed(cell);
-    // }
-    // 将无周长的边的连接点设置为固定点
-    // graph.view.updateFixedTerminalPoint = (
-    //   edge,
-    //   terminal,
-    //   source,
-    //   constraints
-    // ) => {
-    //   mi.mxGraphView.prototype.updateFixedTerminalPoint.call(
-    //     graph.view,
-    //     edge,
-    //     terminal,
-    //     source,
-    //     constraints
-    //   );
-    //   let pts = edge.absolutePoints;
-    //   let pt = pts[source ? 0 : pts.length - 1];
-    //   if (
-    //     terminal != null &&
-    //     // pt == null &&
-    //     graph.view.getPerimeterFunction(terminal) == null
-    //   ) {
-    //     edge.setAbsoluteTerminalPoint(
-    //       new mi.mxPoint(
-    //         graph.view.getRoutingCenterX(terminal),
-    //         graph.view.getRoutingCenterY(terminal)
-    //       ),
-    //       source
-    //     );
-    //   }
     // };
     // const originSelectionCells = graph.connectionHandler.selectCells;
     // graph.connectionHandler.selectCells = function (edge, target) {
@@ -207,6 +170,12 @@ export function createGraph(container) {
     };
     // // 设置动态样式改变标记
     graph.getView().updateStyle = true;
+
+    // 鼠标左键按住平移整个图形
+    graph.setAutoSizeCells(true);
+    graph.setPanning(true);
+    graph.panningHandler.useLeftButtonForPanning = true;
+
     // 校验连线
     // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
     // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => graph.validateGraph(null as any, null))
@@ -240,4 +209,43 @@ export function createRelation(graph, info) {
     }
     return cell;
 }
-//# sourceMappingURL=mxgraph.js.map
+    
+// 生成贝塞尔曲线点 ============================== START
+const binomialBezier = (start, end) => {
+    let cs = 1;
+    let bcs = 1;
+    while (end > 0) {
+        cs *= start;
+        bcs *= end;
+        start--;
+        end--;
+    }
+    return cs / bcs;
+};
+const multiPointBezier = (basePoint, t) => {
+    const len = basePoint.length;
+    let x = 0;
+    let y = 0;
+    for (let i = 0; i < len; i++) {
+        const p = basePoint[i];
+        x +=
+            p.x *
+                Math.pow(1 - t, len - 1 - i) *
+                Math.pow(t, i) *
+                binomialBezier(len - 1, i);
+        y +=
+            p.y *
+                Math.pow(1 - t, len - 1 - i) *
+                Math.pow(t, i) *
+                binomialBezier(len - 1, i);
+    }
+    return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
+};
+export const createBezierPoints = (basePoint, amountPoints) => {
+    const points = [];
+    for (let i = 0; i < amountPoints; i++) {
+        points.push(multiPointBezier(basePoint, i / amountPoints));
+    }
+    return points;
+};
+// 生成贝塞尔曲线点 ============================== END
