@@ -21,7 +21,12 @@ import {
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useStore, mapState } from 'vuex';
 
-import mi, { createGraph, createNode, createRelation } from './util/mxgraph';
+import mi, {
+  createGraph,
+  createNode,
+  createRelation,
+  graphConstants,
+} from './util/mxgraph';
 import * as mx from 'mxgraph';
 import * as rx from 'rxjs';
 import * as op from 'rxjs/operators';
@@ -42,9 +47,9 @@ export default defineComponent({
     let graph: mx.mxGraph = {} as mx.mxGraph;
 
     // 结点信息
-    const nodesList = ref<Array<NodeInfo>>([]);
+    const nodesList = ref<{[id:string]:NodeInfo}>({});
     // 关系信息
-    const nodeRelations = ref<Array<RelationInfo>>([]);
+    const nodeRelations = ref<{[id:string]:RelationInfo}>({});
     const graphNodes = ref<Array<mx.mxCell>>([]);
     const graphRelations = ref<Array<mx.mxCell>>([]);
 
@@ -118,15 +123,15 @@ export default defineComponent({
           mi.mxEvent.CONNECT,
           (sender, evt) => {
             const edge = evt.getProperty('cell');
-            edge.setValue('请设置意图');
+            edge.setValue(graphConstants.defaultIntent);
             const source = graph.getModel().getTerminal(edge, true);
             const target = graph.getModel().getTerminal(edge, false);
             target.collapsed = true;
             edge.setId(source.getId() + '_' + target.getId());
 
             // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
-            if (target.getValue() === '开头语句填写') {
-              target.setValue('请输入文本');
+            if (target.getValue() === graphConstants.defaultPrologue) {
+              target.setValue(graphConstants.defaultQuestion);
             }
             // const edgeStyle = graph.getCellStyle(edge);
 
@@ -154,6 +159,23 @@ export default defineComponent({
           }
         );
 
+        // 直接在结点上修改内容时，可更新
+        graph.getSelectionModel().addListener( mi.mxEvent.CHANGE, (sender, evt) => {
+          console.log(sender.cells, evt)
+          if(sender.cells.length > 0){
+            // 只允许修改一个
+            const cell = sender.cells[0] as mx.mxCell
+            if(cell.edge){
+              // 是边
+              cell.getId()
+
+            }else{
+              // 是结点
+            }
+
+          }
+
+        })
         // 添加放大缩小
         // var btn1 = mi.mxUtils.button('+', function()
         // {
@@ -171,18 +193,21 @@ export default defineComponent({
 
     const dataInit = () => {
       // 将获取的结点和边初始化
-      graphNodes.value = nodesList.value.reduce(
-        (previos: Array<mx.mxCell>, current: NodeInfo) => {
-          return previos.concat(createNode(graph, current));
-        },
-        []
-      );
-      graphRelations.value = nodeRelations.value.reduce(
-        (previos: Array<mx.mxCell>, current: RelationInfo) => {
-          return previos.concat(createRelation(graph, current));
-        },
-        []
-      );
+      // https://www.cnblogs.com/waitinglulu/p/11572850.html
+      // nodesList.value.
+
+      // graphNodes.value = nodesList.value.reduce(
+      //   (previos: Array<mx.mxCell>, current: NodeInfo) => {
+      //     return previos.concat(createNode(graph, current));
+      //   },
+      //   []
+      // );
+      // graphRelations.value = nodeRelations.value.reduce(
+      //   (previos: Array<mx.mxCell>, current: RelationInfo) => {
+      //     return previos.concat(createRelation(graph, current));
+      //   },
+      //   []
+      // );
 
       // rx.of(nodesList.value).pipe(
 
@@ -201,12 +226,18 @@ export default defineComponent({
         const v1 = graph.insertVertex(
           parent,
           null,
-          '开头语句填写',
+          graphConstants.defaultPrologue,
           400,
           20,
-          180,
-          30
+          graphConstants.vertexWidth,
+          graphConstants.vertexHeight
         );
+        // v1.geometry.alternateBounds = new mi.mxRectangle(
+        //   0,
+        //   0,
+        //   graphConstants.vertexWidth,
+        //   graphConstants.vertexHeight
+        // );
         nodesList.value.push({
           id: v1.getId(),
           xpos: v1.getGeometry().x,

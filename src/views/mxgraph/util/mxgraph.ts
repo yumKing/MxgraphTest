@@ -1,4 +1,4 @@
-import factory, { mxGraph, mxCell, mxPoint } from 'mxgraph';
+import factory, { mxGraph, mxCell, mxPoint, mxUtils, mxEvent } from 'mxgraph';
 import { NodeInfo, RelationInfo } from '../model/node.model';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
@@ -7,6 +7,14 @@ const mi = factory({
 });
 
 export default mi;
+
+export const graphConstants = {
+  defaultPrologue: '请填写开头语',
+  defaultIntent: '请设置意图',
+  defaultQuestion: '请输入对话问题',
+  vertexWidth: 180,
+  vertexHeight: 30,
+};
 
 /**
  * 创建一个基本的graph
@@ -24,6 +32,28 @@ export function createGraph(container: HTMLElement): mxGraph {
   );
 
   const graph = new mi.mxGraph(container);
+
+  // 矩形区域选框及事件处理
+  new mi.mxRubberband(graph);
+
+  setVertexInfo(graph);
+
+  setEdgeInfo(graph);
+
+  setGraphInfo(graph);
+
+  setKeyHander(graph);
+
+  setOverrideFunc(graph);
+
+  return graph;
+}
+
+/**
+ * 结点配置
+ * @param graph
+ */
+export function setVertexInfo(graph: mxGraph) {
   // config graph
   // 设置结点样式
   const vertexStyle = graph.getStylesheet().getDefaultVertexStyle();
@@ -35,8 +65,10 @@ export function createGraph(container: HTMLElement): mxGraph {
   vertexStyle[mi.mxConstants.STYLE_ROUNDED] = '1';
   // 启用结点阴影
   vertexStyle[mi.mxConstants.STYLE_SHADOW] = true;
+
   // 结点边框透明
   vertexStyle[mi.mxConstants.STYLE_STROKECOLOR] = 'transparent';
+
   // 阴影颜色
   mi.mxConstants.SHADOWCOLOR = '#cdcdcd';
   // 阴影相对结点右偏移
@@ -45,14 +77,23 @@ export function createGraph(container: HTMLElement): mxGraph {
   mi.mxConstants.SHADOW_OFFSET_Y = 3;
   // 阴影透明度
   mi.mxConstants.SHADOW_OPACITY = 0.3;
+
   // 结点label样式
   // 和enableHtmlLabel 配合使用
+  // 允许HTML label
+  graph.setHtmlLabels(true);
   vertexStyle[mi.mxConstants.STYLE_WHITE_SPACE] = 'wrap';
   vertexStyle[mi.mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = '#ffffff';
   vertexStyle[mi.mxConstants.STYLE_FONTCOLOR] = 'rgba(0,0,0,.65)';
   vertexStyle[mi.mxConstants.STYLE_FONTFAMILY] =
     'Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;';
+}
 
+/**
+ * 设置边信息
+ * @param graph
+ */
+export function setEdgeInfo(graph: mxGraph) {
   // 设置 连线样式为曲线
   const edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
   edgeStyle[mi.mxConstants.STYLE_EDGE] = mi.mxConstants.EDGESTYLE_ORTHOGONAL;
@@ -80,7 +121,13 @@ export function createGraph(container: HTMLElement): mxGraph {
   // edgeStyle[mi.mxConstants.STYLE_FONTSTYLE] = '1';
   // 和enableHtmlLabel 配合使用
   // edgeStyle[mi.mxConstants.STYLE_WHITE_SPACE] = 'wrap';
+}
 
+/**
+ * graph 配置
+ * @param graph
+ */
+export function setGraphInfo(graph: mxGraph) {
   // 设置容器画布大小
   // Optional disabling of sizing
   // graph.setCellsResizable(false);
@@ -89,7 +136,7 @@ export function createGraph(container: HTMLElement): mxGraph {
   // graph.setResizeContainer(true);
   // graph.minimumContainerSize = new mxRectangle(0, 0, 500, 380);
   // graph.setBorder(60);
-
+  
   // 结点允许连线
   graph.setConnectable(true);
   // 允许移动边上的连接点
@@ -113,8 +160,6 @@ export function createGraph(container: HTMLElement): mxGraph {
       return graph.connectionHandler.isConnectableCell(cell);
     };
   }
-  // 允许HTML label
-  graph.setHtmlLabels(true);
 
   // 将节点约束在父节点内，不允许跑到父节点范围外
   graph.constrainChildren = true;
@@ -172,17 +217,28 @@ export function createGraph(container: HTMLElement): mxGraph {
   //   console.log('edge: ', edge, target);
   //   originSelectionCells.call(this, edge, target);
   // };
+  // // 设置动态样式改变标记
+  graph.getView().updateStyle = true;
 
+  // 校验连线
+  // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
+  // 鼠标左键按住平移整个图形
+  graph.setPanning(true);
+  graph.panningHandler.useLeftButtonForPanning = true;
+
+  // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
+    // console.log(sender, evt);
+  // })
+  
+}
+
+/**
+ * 设置键盘鼠标事件处理
+ * @param graph
+ */
+export function setKeyHander(graph: mxGraph) {
   // 鼠标键盘事件处理
   const keyHandler = new mi.mxKeyHandler(graph);
-  const originSelectCells = graph.getSelectionCells;
-  graph.getSelectionCells = function () {
-    const selectCells = originSelectCells.call(this);
-    if (selectCells != null && selectCells.length > 0) {
-      return selectCells.filter((cell) => !cell.getAttribute('root', false));
-    }
-    return selectCells;
-  };
   keyHandler.bindKey(46, (evt) => {
     if (graph.isEnabled()) {
       graph.removeCells(null as any, true);
@@ -203,13 +259,20 @@ export function createGraph(container: HTMLElement): mxGraph {
     );
     return originKeyDown.call(this, evt);
   };
+}
 
-  // 矩形区域选框及事件处理
-  new mi.mxRubberband(graph);
-
-  // 边的标签不可编辑
-  // graph.isCellEditable = function (cell) {
-  //   return !this.getModel().isEdge(cell);
+/**
+ * 一些覆盖方法的重写
+ * @param graph
+ */
+export function setOverrideFunc(graph: mxGraph) {
+  // const originSelectCells = graph.getSelectionCells;
+  // graph.getSelectionCells = function () {
+  //   const selectCells = originSelectCells.call(this);
+  //   if (selectCells != null && selectCells.length > 0) {
+  //     return selectCells.filter((cell) => !cell.getAttribute('root', false));
+  //   }
+  //   return selectCells;
   // };
 
   // // 将标签截断为结点大小
@@ -227,13 +290,29 @@ export function createGraph(container: HTMLElement): mxGraph {
       const style = graph.getCellStyle(cell);
       const fontSize =
         style[mi.mxConstants.STYLE_FONTSIZE] || mi.mxConstants.DEFAULT_FONTSIZE;
-        const max = geometry.width / (fontSize * 0.625);
+      const max = geometry.width / (fontSize * 0.625);
       if (max < label.length) {
         return label.substring(0, max) + '...';
       }
     }
     return label;
   };
+
+  // 边的标签不可编辑
+  // graph.isCellEditable = function (cell) {
+  //   return !this.getModel().isEdge(cell);
+  // };
+  // graph.autoSizeCellsOnAdd = true;
+  // graph.isCellResizable = function (cell) {
+  //   var geo = this.model.getGeometry(cell);
+
+  //   return geo == null || !geo.relative;
+  // };
+  // // Enables wrapping for vertex labels
+  // graph.isWrapping = function (cell) {
+  //   return this.model.isCollapsed(cell);
+  // };
+
   // 如果没有定义偏移量 使能 剪辑
   graph.isLabelClipped = (cell: mxCell): boolean => {
     const geo = graph.model.getGeometry(cell);
@@ -243,22 +322,14 @@ export function createGraph(container: HTMLElement): mxGraph {
       (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0))
     );
   };
-
-  // // 设置动态样式改变标记
-  graph.getView().updateStyle = true;
-
-  // 校验连线
-  // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
-  // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => graph.validateGraph(null as any, null))
-  // 鼠标左键按住平移整个图形
-  graph.setAutoSizeCells(true);
-  graph.setPanning(true);
-  graph.panningHandler.useLeftButtonForPanning = true;
-
-
-  return graph;
 }
 
+/**
+ * 创建结点
+ * @param graph
+ * @param info
+ * @returns
+ */
 export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
   const parent = graph.getDefaultParent();
   graph.getModel().beginUpdate();
@@ -271,15 +342,27 @@ export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
       info.content,
       info.xpos,
       info.ypos,
-      180,
-      30
+      graphConstants.vertexWidth,
+      graphConstants.vertexHeight
     );
+    // cell.geometry.alternateBounds = new mi.mxRectangle(
+    //   0,
+    //   0,
+    //   graphConstants.vertexWidth,
+    //   graphConstants.vertexHeight
+    // );
   } finally {
     graph.getModel().endUpdate();
   }
   return cell;
 }
 
+/**
+ *
+ * @param graph 创建结点关系
+ * @param info
+ * @returns
+ */
 export function createRelation(graph: mxGraph, info: RelationInfo): mxCell {
   const parent = graph.getDefaultParent();
   graph.getModel().beginUpdate();
