@@ -47,11 +47,13 @@ export default defineComponent({
     let graph: mx.mxGraph = {} as mx.mxGraph;
 
     // 结点信息
-    const nodesList = ref<{[id:string]:NodeInfo}>({});
+    const nodesList = ref<{ [id: string]: NodeInfo }>({});
     // 关系信息
-    const nodeRelations = ref<{[id:string]:RelationInfo}>({});
+    const nodeRelations = ref<{ [id: string]: RelationInfo }>({});
     const graphNodes = ref<Array<mx.mxCell>>([]);
     const graphRelations = ref<Array<mx.mxCell>>([]);
+
+    let refNode = ref<mx.mxCell | null>(null);
 
     // 判断路由过来是否有参数，有则说明是加载已有的画布，否则是新的画布
     // 有参数则调用获取画布数据接口，返回节点和节点关系信息数据，并将节点绘制在画布中
@@ -97,7 +99,15 @@ export default defineComponent({
           op.map<any, any>((res) => res.data),
           op.tap((data) => {
             nodesList.value = data.nodesList;
+
+            // for (let key in nls) {
+            //   nodesList.value[key] = ref<any>(nls[key]);
+            // }
+
             nodeRelations.value = data.nodeRelations;
+            // for (let key in nrl) {
+            // nodeRelations.value[key] = ref<any>(nrl[key]);
+            // }
             dataInit();
           })
         )
@@ -135,7 +145,10 @@ export default defineComponent({
             }
             // const edgeStyle = graph.getCellStyle(edge);
 
-            const targetNode = {
+            graphNodes.value.push(target);
+            graphRelations.value.push(edge);
+
+            nodesList.value[target.getId()] = {
               id: target.getId(),
               xpos: target.getGeometry().x,
               ypos: target.getGeometry().y,
@@ -143,39 +156,56 @@ export default defineComponent({
               soundRecordable: false,
               hasVariable: false,
             };
-
-            const relation = {
+            nodeRelations.value[edge.getId()] = {
               id: edge.getId(),
               sourceId: source.getId(),
               targetId: target.getId(),
               intent: edge.getValue(),
             };
-
-            graphNodes.value.push(target);
-            graphRelations.value.push(edge);
-
-            nodesList.value.push(targetNode);
-            nodeRelations.value.push(relation);
           }
         );
 
-        // 直接在结点上修改内容时，可更新
-        graph.getSelectionModel().addListener( mi.mxEvent.CHANGE, (sender, evt) => {
-          console.log(sender.cells, evt)
-          if(sender.cells.length > 0){
-            // 只允许修改一个
-            const cell = sender.cells[0] as mx.mxCell
-            if(cell.edge){
-              // 是边
-              cell.getId()
+        const originValueCC = graph.model.valueForCellChanged;
+        const originStyleCC = graph.model.styleForCellChanged;
+        const originTerminalCC = graph.model.terminalForCellChanged;
+        const originGeoCC = graph.model.geometryForCellChanged;
+        const originVisibleSCC = graph.model.visibleStateForCellChanged;
+        graph.model.valueForCellChanged = function (cell, value) {
+          console.log(cell.getValue(), value);
+          originValueCC.call(this, cell, value);
 
-            }else{
-              // 是结点
-            }
-
+          if (cell.edge) {
+            // 是边
+            const selectedRel = nodeRelations.value[cell.getId()];
+            selectedRel.intent = cell.getValue();
+          } else {
+            // 是结点
+            const selectedNode = nodesList.value[cell.getId()];
+            selectedNode.xpos = cell.getGeometry().x;
+            selectedNode.ypos = cell.getGeometry().y;
+            selectedNode.content = cell.getValue();
           }
+        };
+        graph.model.geometryForCellChanged = function (cell, geo) {
+          const geos = originGeoCC.call(this, cell, geo);
+          if (cell.vertex) {
+            // 是结点
+            const selectedNode = nodesList.value[cell.getId()];
+            selectedNode.xpos = cell.getGeometry().x;
+            selectedNode.ypos = cell.getGeometry().y;
+          }
+          return geos;
+        };
 
-        })
+        graph
+          .getSelectionModel()
+          .addListener(mi.mxEvent.CHANGE, (sender, evt) => {
+            if (sender.cells && sender.cells[0]) {
+              refNode.value = sender.cells[0];
+              console.log('chage:', refNode.value);
+            }
+          });
+
         // 添加放大缩小
         // var btn1 = mi.mxUtils.button('+', function()
         // {
@@ -193,21 +223,15 @@ export default defineComponent({
 
     const dataInit = () => {
       // 将获取的结点和边初始化
-      // https://www.cnblogs.com/waitinglulu/p/11572850.html
-      // nodesList.value.
+      for (let key in nodesList.value) {
+        graphNodes.value.push(createNode(graph, nodesList.value[key]));
+      }
 
-      // graphNodes.value = nodesList.value.reduce(
-      //   (previos: Array<mx.mxCell>, current: NodeInfo) => {
-      //     return previos.concat(createNode(graph, current));
-      //   },
-      //   []
-      // );
-      // graphRelations.value = nodeRelations.value.reduce(
-      //   (previos: Array<mx.mxCell>, current: RelationInfo) => {
-      //     return previos.concat(createRelation(graph, current));
-      //   },
-      //   []
-      // );
+      for (let key in nodeRelations.value) {
+        graphRelations.value.push(
+          createRelation(graph, nodeRelations.value[key])
+        );
+      }
 
       // rx.of(nodesList.value).pipe(
 
@@ -238,14 +262,14 @@ export default defineComponent({
         //   graphConstants.vertexWidth,
         //   graphConstants.vertexHeight
         // );
-        nodesList.value.push({
+        nodesList.value[v1.getId()] = {
           id: v1.getId(),
           xpos: v1.getGeometry().x,
           ypos: v1.getGeometry().y,
           content: v1.getValue(),
           soundRecordable: false,
           hasVariable: false,
-        });
+        };
 
         graphNodes.value.push(v1);
       } finally {
@@ -253,6 +277,20 @@ export default defineComponent({
       }
     };
 
+    const showNodeInfo = () => {
+      // 防止没有停止编辑导致直接保存
+      if (graph.isEditing()) {
+        graph.stopEditing(false);
+      }
+      console.log('info: ', nodesList.value, nodeRelations.value);
+    };
+    const saveNodeInfo = () => {
+      // 防止没有停止编辑导致直接保存
+      if (graph.isEditing()) {
+        graph.stopEditing(false);
+      }
+      console.log('graph: ', graphNodes.value, graphRelations.value);
+    };
     return {
       graphContainer,
       title,
@@ -260,17 +298,12 @@ export default defineComponent({
       nodeRelations,
       graphNodes,
       graphRelations,
+      showNodeInfo,
+      saveNodeInfo,
     };
   },
 
-  methods: {
-    showNodeInfo() {
-      console.log('info: ', this.nodesList, this.nodeRelations);
-    },
-    saveNodeInfo() {
-      console.log('graph: ', this.graphNodes, this.graphRelations);
-    },
-  },
+  methods: {},
 });
 </script>
 

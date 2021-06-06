@@ -26,15 +26,12 @@ export function createGraph(container: HTMLElement): mxGraph {
   mi.mxEvent.disableContextMenu(container);
 
   mi.mxConnectionHandler.prototype.connectImage = new mi.mxImage(
-    'mxgraph/images/connector.gif',
+    'mxgraph/images/dot.gif',
     16,
     16
   );
 
   const graph = new mi.mxGraph(container);
-
-  // 矩形区域选框及事件处理
-  new mi.mxRubberband(graph);
 
   setVertexInfo(graph);
 
@@ -45,6 +42,9 @@ export function createGraph(container: HTMLElement): mxGraph {
   setKeyHander(graph);
 
   setOverrideFunc(graph);
+
+  // 矩形区域选框及事件处理
+  new mi.mxRubberband(graph);
 
   return graph;
 }
@@ -134,9 +134,9 @@ export function setGraphInfo(graph: mxGraph) {
   // Configures the graph contains to resize and
   // add a border at the bottom, right
   // graph.setResizeContainer(true);
-  // graph.minimumContainerSize = new mxRectangle(0, 0, 500, 380);
+  // graph.minimumContainerSize = new mi.mxRectangle(0, 0, 500, 380);
   // graph.setBorder(60);
-  
+
   // 结点允许连线
   graph.setConnectable(true);
   // 允许移动边上的连接点
@@ -223,13 +223,36 @@ export function setGraphInfo(graph: mxGraph) {
   // 校验连线
   // graph.multiplicities.push(new mi.mxMultiplicity(true, 'Source', '','',1,1,['Source'], '数量测试校验', '类型测试校验', false))
   // 鼠标左键按住平移整个图形
+  // Adds active border for panning inside the container
+  // graph.createPanningManager = function () {
+  //   var pm = new mi.mxPanningManager(this);
+  //   pm.border = 30;
+
+  //   return pm;
+  // };
+  // graph.allowAutoPanning = true;
   graph.setPanning(true);
-  graph.panningHandler.useLeftButtonForPanning = true;
+
+  // graph.panningHandler.useLeftButtonForPanning = true;
 
   // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
-    // console.log(sender, evt);
+  // console.log(sender, evt);
   // })
-  
+
+  // Changes the zoom on mouseWheel events
+  mi.mxEvent.addMouseWheelListener(function (evt, up) {
+    if (!mi.mxEvent.isConsumed(evt)) {
+      if (up) {
+        graph.zoomIn();
+        // editor.execute('zoomIn');
+      } else {
+        graph.zoomOut();
+        // editor.execute('zoomOut');
+      }
+
+      mi.mxEvent.consume(evt);
+    }
+  });
 }
 
 /**
@@ -244,19 +267,19 @@ export function setKeyHander(graph: mxGraph) {
       graph.removeCells(null as any, true);
     }
 
-    console.log('evt: ', evt);
+    // console.log('evt: ', evt);
   });
   const originKeyDown = mi.mxKeyHandler.prototype.keyDown;
   keyHandler.keyDown = function (evt) {
-    console.log(
-      'keydown, code: ',
-      evt.keyCode,
-      evt.key, // 一般键
-      evt.metaKey, // windows键
-      evt.shiftKey, // shift
-      evt.ctrlKey, // ctrl
-      evt.altKey // alt
-    );
+    // console.log(
+    //   'keydown, code: ',
+    //   evt.keyCode,
+    //   evt.key, // 一般键
+    //   evt.metaKey, // windows键
+    //   evt.shiftKey, // shift
+    //   evt.ctrlKey, // ctrl
+    //   evt.altKey // alt
+    // );
     return originKeyDown.call(this, evt);
   };
 }
