@@ -1,0 +1,42 @@
+.main-pane {
+  width: 97vw;
+  height: 97vh;
+  margin: 0 auto;
+  // 启动弹性盒子
+  display: flex;
+  flex-direction: column;
+
+  .menus {
+    line-height: 50px;
+    height: 50px;
+    background-color: green;
+  }
+
+  .toolbar {
+    line-height: 50px;
+    height: 50px;
+    background-color: blueviolet;
+  }
+
+  .main {
+    height: calc(100% - 100px);
+    // background-color: #bfa;
+    display: flex;
+    flex-direction: row;
+
+    .left-list {
+      width: 200px;
+      background-color: aqua;
+    }
+
+    .main-router {
+      width: calc(100% - 400px);
+      height: 100%;
+    }
+
+    .right-props {
+      width: 200px;
+      background-color: chartreuse;
+    }
+  }
+}

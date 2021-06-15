@@ -1,13 +1,8 @@
 <template>
   <div id="base-route">
-    <router-link to="/graph/baseGraph">基础例子</router-link> |
-    <router-link to="/graph/anchors">连线锚点</router-link> |
-    <router-link to="/graph/animation">基础动画</router-link> |
-    <router-link to="/graph/boundary">边界</router-link> |
-    <router-link to="/graph/clipboard">粘贴板</router-link> |
-    <router-link to="/graph/edgeDynStyle">连线动态样式</router-link> |
-    <router-link to="/graph/autoLayout">自动布局</router-link> |
-    <router-link to="/graph/myflow">我的流程</router-link> |
+    <router-link to="/test/baseGraph">基础例子</router-link> | <router-link to="/test/anchors">连线锚点</router-link> | <router-link to="/test/animation">基础动画</router-link> |
+    <router-link to="/test/boundary">边界</router-link> | <router-link to="/test/clipboard">粘贴板</router-link> | <router-link to="/test/edgeDynStyle">连线动态样式</router-link> |
+    <router-link to="/test/autoLayout">自动布局</router-link> | <router-link to="/test/myflow">我的流程</router-link> |
   </div>
 </template>
 

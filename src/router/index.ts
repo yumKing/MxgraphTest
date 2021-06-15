@@ -1,90 +1,100 @@
 import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
-import Home from '../views/Home.vue';
+import MainPane from '@/views/main/MainPane.vue';
 
 const routes: Array<RouteRecordRaw> = [
+  // {
+  //   path: '/',
+  //   name: 'Home',
+  //   component: Home,
+  // },
+  // {
+  //   path: '/about',
+  //   name: 'About',
+  //   // route level code-splitting
+  //   // this generates a separate chunk (about.[hash].js) for this route
+  //   // which is lazy-loaded when the route is visited.
+  //   component: () =>
+  //     import(/* webpackChunkName: "about" */ '../views/About.vue'),
+  // },
   {
-    path: '/',
-    name: 'Home',
-    component: Home,
+    path: '/dashboard',
+    name: 'dashboard',
+    component: MainPane,
+    children: [
+      {
+        path: 'home',
+        name: 'home',
+        component: () => import('@/views/Home.vue'),
+      },
+    ],
   },
   {
-    path: '/about',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () =>
-      import(/* webpackChunkName: "about" */ '../views/About.vue'),
+    path: '/process',
+    name: 'process',
+    component: MainPane,
+    children: [
+      {
+        path: 'processHome',
+        name: 'processHome',
+        component: () => import('@/views/process/Process.vue'),
+      },
+    ],
   },
   {
-    path: '/graph',
-    redirect: '/graph/base',
+    path: '/test',
+    name: 'test',
+    component: MainPane,
+    children: [
+      {
+        path: 'testHome',
+        name: 'testHome',
+        component: () => import('@/views/mxgraph/Base.vue'),
+      },
+      {
+        path: 'baseGraph',
+        name: 'baseGraph',
+        component: () => import('@/views/mxgraph/BaseGraph.vue'),
+      },
+      {
+        path: 'anchors',
+        name: 'anchors',
+        component: () => import('@/views/mxgraph/Anchors.vue'),
+      },
+      {
+        path: 'animation',
+        name: 'animation',
+        component: () => import('@/views/mxgraph/Animation.vue'),
+      },
+      {
+        path: 'boundary',
+        name: 'boundary',
+        component: () => import('@/views/mxgraph/Boundary.vue'),
+      },
+      {
+        path: 'clipboard',
+        name: 'clipboard',
+        component: () => import('@/views/mxgraph/Clipboard.vue'),
+      },
+      {
+        path: 'edgeDynStyle',
+        name: 'edgeDynStyle',
+        component: () => import('@/views/mxgraph/EdgeDynamicStyle.vue'),
+      },
+      {
+        path: 'autoLayout',
+        name: 'autoLayout',
+        component: () => import('@/views/mxgraph/AutoLayout.vue'),
+      },
+      {
+        path: 'myflow',
+        name: 'myflow',
+        component: () => import(/* webpackChunkName: "myflow" */ '@/views/mxgraph/MyFlow.vue'),
+      },
+    ],
   },
   {
-    path: '/graph/base',
-    name: 'Base',
-    component: () =>
-      import(/* webpackChunkName: "gbase" */ '../views/mxgraph/Base.vue'),
-  },
-  {
-    path: '/graph/baseGraph',
-    name: 'BaseGraph',
-    component: () =>
-      import(
-        /* webpackChunkName: "baseGraph" */ '../views/mxgraph/BaseGraph.vue'
-      ),
-  },
-  {
-    path: '/graph/anchors',
-    name: 'Anchors',
-    component: () =>
-      import(/* webpackChunkName: "anchors" */ '../views/mxgraph/Anchors.vue'),
-  },
-  {
-    path: '/graph/animation',
-    name: 'Animation',
-    component: () =>
-      import(
-        /* webpackChunkName: "animation" */ '../views/mxgraph/Animation.vue'
-      ),
-  },
-  {
-    path: '/graph/boundary',
-    name: 'Boundary',
-    component: () =>
-      import(
-        /* webpackChunkName: "boundary" */ '../views/mxgraph/Boundary.vue'
-      ),
-  },
-  {
-    path: '/graph/clipboard',
-    name: 'Clipboard',
-    component: () =>
-      import(
-        /* webpackChunkName: "clipboard" */ '../views/mxgraph/Clipboard.vue'
-      ),
-  },
-  {
-    path: '/graph/edgeDynStyle',
-    name: 'EdgeDynamicStyle',
-    component: () =>
-      import(
-        /* webpackChunkName: "edgeDynStyle" */ '../views/mxgraph/EdgeDynamicStyle.vue'
-      ),
-  },
-  {
-    path: '/graph/autoLayout',
-    name: 'AutoLayout',
-    component: () =>
-      import(
-        /* webpackChunkName: "autoLayout" */ '../views/mxgraph/AutoLayout.vue'
-      ),
-  },
-  {
-    path: '/graph/myflow',
-    name: 'MyFlow',
-    component: () =>
-      import(/* webpackChunkName: "myflow" */ '../views/mxgraph/MyFlow.vue'),
+    path: '/:pathMatch(.*)*',
+    redirect: '/dashboard/home',
   },
 ];
 

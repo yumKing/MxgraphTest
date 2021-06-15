@@ -25,11 +25,7 @@ export function createGraph(container: HTMLElement): mxGraph {
   // 不允许内置的上下文菜单
   mi.mxEvent.disableContextMenu(container);
 
-  mi.mxConnectionHandler.prototype.connectImage = new mi.mxImage(
-    'mxgraph/images/dot.gif',
-    16,
-    16
-  );
+  mi.mxConnectionHandler.prototype.connectImage = new mi.mxImage('mxgraph/images/dot.gif', 16, 16);
 
   const graph = new mi.mxGraph(container);
 
@@ -85,8 +81,7 @@ export function setVertexInfo(graph: mxGraph) {
   vertexStyle[mi.mxConstants.STYLE_WHITE_SPACE] = 'wrap';
   vertexStyle[mi.mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = '#ffffff';
   vertexStyle[mi.mxConstants.STYLE_FONTCOLOR] = 'rgba(0,0,0,.65)';
-  vertexStyle[mi.mxConstants.STYLE_FONTFAMILY] =
-    'Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;';
+  vertexStyle[mi.mxConstants.STYLE_FONTFAMILY] = 'Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;';
 }
 
 /**
@@ -114,8 +109,7 @@ export function setEdgeInfo(graph: mxGraph) {
   edgeStyle[mi.mxConstants.STYLE_PERIMETER_SPACING] = 4;
   // 边label样式
   edgeStyle[mi.mxConstants.STYLE_LABEL_BACKGROUNDCOLOR] = '#f0f6fe';
-  edgeStyle[mi.mxConstants.STYLE_FONTFAMILY] =
-    'Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;';
+  edgeStyle[mi.mxConstants.STYLE_FONTFAMILY] = 'Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;';
   edgeStyle[mi.mxConstants.STYLE_FONTCOLOR] = 'rgb(31, 140, 236)';
   // edgeStyle[mi.mxConstants.STYLE_LABEL_WIDTH] = 16
   // edgeStyle[mi.mxConstants.STYLE_FONTSTYLE] = '1';
@@ -164,7 +158,7 @@ export function setGraphInfo(graph: mxGraph) {
   // 将节点约束在父节点内，不允许跑到父节点范围外
   graph.constrainChildren = true;
   // graph.setResizeContainer(false);
-  // graph.centerZoom = true;
+  graph.centerZoom = false;
   // graph.extendParentsOnAdd = false
 
   // 配套使用，当连线没有指向目标结点，则创建目标结点, 默认是copy边的源作为目地结点
@@ -238,21 +232,6 @@ export function setGraphInfo(graph: mxGraph) {
   // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
   // console.log(sender, evt);
   // })
-
-  // Changes the zoom on mouseWheel events
-  mi.mxEvent.addMouseWheelListener(function (evt, up) {
-    if (!mi.mxEvent.isConsumed(evt)) {
-      if (up) {
-        graph.zoomIn();
-        // editor.execute('zoomIn');
-      } else {
-        graph.zoomOut();
-        // editor.execute('zoomOut');
-      }
-
-      mi.mxEvent.consume(evt);
-    }
-  });
 }
 
 /**
@@ -269,19 +248,37 @@ export function setKeyHander(graph: mxGraph) {
 
     // console.log('evt: ', evt);
   });
-  const originKeyDown = mi.mxKeyHandler.prototype.keyDown;
-  keyHandler.keyDown = function (evt) {
-    // console.log(
-    //   'keydown, code: ',
-    //   evt.keyCode,
-    //   evt.key, // 一般键
-    //   evt.metaKey, // windows键
-    //   evt.shiftKey, // shift
-    //   evt.ctrlKey, // ctrl
-    //   evt.altKey // alt
-    // );
-    return originKeyDown.call(this, evt);
-  };
+
+  // Changes the zoom on mouseWheel events
+  // mi.mxEvent.addMouseWheelListener(function (evt, up) {
+  //   // 只能在画布内部才允许滚动
+
+  //   if (!mi.mxEvent.isConsumed(evt)) {
+  //     if (up) {
+  //       graph.zoomIn();
+  //       // editor.execute('zoomIn');
+  //     } else {
+  //       graph.zoomOut();
+  //       // editor.execute('zoomOut');
+  //     }
+
+  //     mi.mxEvent.consume(evt);
+  //   }
+  // });
+
+  // const originKeyDown = mi.mxKeyHandler.prototype.keyDown;
+  // keyHandler.keyDown = function (evt) {
+  // console.log(
+  //   'keydown, code: ',
+  //   evt.keyCode,
+  //   evt.key, // 一般键
+  //   evt.metaKey, // windows键
+  //   evt.shiftKey, // shift
+  //   evt.ctrlKey, // ctrl
+  //   evt.altKey // alt
+  // );
+  // return originKeyDown.call(this, evt);
+  // };
 }
 
 /**
@@ -302,17 +299,9 @@ export function setOverrideFunc(graph: mxGraph) {
   graph.getLabel = (cell) => {
     const label = graph.labelsVisible ? graph.convertValueToString(cell) : '';
     const geometry = graph.model.getGeometry(cell);
-    if (
-      !graph.model.isCollapsed(cell) &&
-      geometry != null &&
-      (geometry.offset == null ||
-        (geometry.offset.x == 0 && geometry.offset.y == 0)) &&
-      graph.model.isVertex(cell) &&
-      geometry.width >= 2
-    ) {
+    if (!graph.model.isCollapsed(cell) && geometry != null && (geometry.offset == null || (geometry.offset.x == 0 && geometry.offset.y == 0)) && graph.model.isVertex(cell) && geometry.width >= 2) {
       const style = graph.getCellStyle(cell);
-      const fontSize =
-        style[mi.mxConstants.STYLE_FONTSIZE] || mi.mxConstants.DEFAULT_FONTSIZE;
+      const fontSize = style[mi.mxConstants.STYLE_FONTSIZE] || mi.mxConstants.DEFAULT_FONTSIZE;
       const max = geometry.width / (fontSize * 0.625);
       if (max < label.length) {
         return label.substring(0, max) + '...';
@@ -339,11 +328,7 @@ export function setOverrideFunc(graph: mxGraph) {
   // 如果没有定义偏移量 使能 剪辑
   graph.isLabelClipped = (cell: mxCell): boolean => {
     const geo = graph.model.getGeometry(cell);
-    return (
-      geo != null &&
-      !geo.relative &&
-      (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0))
-    );
+    return geo != null && !geo.relative && (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0));
   };
 }
 
@@ -359,15 +344,7 @@ export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
   let cell = {} as mxCell;
   try {
     // 初始化时 就得添加一个结点，并返回id设置到结点id中
-    cell = graph.insertVertex(
-      parent,
-      info.id,
-      info.content,
-      info.xpos,
-      info.ypos,
-      graphConstants.vertexWidth,
-      graphConstants.vertexHeight
-    );
+    cell = graph.insertVertex(parent, info.id, info.content, info.xpos, info.ypos, graphConstants.vertexWidth, graphConstants.vertexHeight);
     // cell.geometry.alternateBounds = new mi.mxRectangle(
     //   0,
     //   0,
@@ -392,13 +369,7 @@ export function createRelation(graph: mxGraph, info: RelationInfo): mxCell {
   let cell = {} as mxCell;
   try {
     // 初始化时 就得添加一个结点，并返回id设置到结点id中
-    cell = graph.insertEdge(
-      parent,
-      info.id,
-      info.intent,
-      graph.getModel().getCell(info.sourceId),
-      graph.getModel().getCell(info.targetId)
-    );
+    cell = graph.insertEdge(parent, info.id, info.intent, graph.getModel().getCell(info.sourceId), graph.getModel().getCell(info.targetId));
   } finally {
     graph.getModel().endUpdate();
   }
@@ -423,24 +394,13 @@ const multiPointBezier = (basePoint: Array<mxPoint>, t: number): mxPoint => {
   let y = 0;
   for (let i = 0; i < len; i++) {
     const p = basePoint[i];
-    x +=
-      p.x *
-      Math.pow(1 - t, len - 1 - i) *
-      Math.pow(t, i) *
-      binomialBezier(len - 1, i);
-    y +=
-      p.y *
-      Math.pow(1 - t, len - 1 - i) *
-      Math.pow(t, i) *
-      binomialBezier(len - 1, i);
+    x += p.x * Math.pow(1 - t, len - 1 - i) * Math.pow(t, i) * binomialBezier(len - 1, i);
+    y += p.y * Math.pow(1 - t, len - 1 - i) * Math.pow(t, i) * binomialBezier(len - 1, i);
   }
   return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
 };
 
-export const createBezierPoints = (
-  basePoint: Array<mxPoint>,
-  amountPoints: number
-): Array<mxPoint> => {
+export const createBezierPoints = (basePoint: Array<mxPoint>, amountPoints: number): Array<mxPoint> => {
   const points: Array<mxPoint> = [];
   for (let i = 0; i < amountPoints; i++) {
     points.push(multiPointBezier(basePoint, i / amountPoints));
