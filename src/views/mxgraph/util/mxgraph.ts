@@ -98,6 +98,8 @@ export function setEdgeInfo(graph: mxGraph) {
     const ponits = createBezierPoints(state.absolutePoints, 5);
     return new mi.mxPoint(ponits[2].x, ponits[2].y);
   };
+  // 禁止调整线条弯曲度
+  graph.setCellsBendable(false);
   // 设置边的终端箭头样式
   edgeStyle[mi.mxConstants.STYLE_ENDARROW] = mi.mxConstants.ARROW_OPEN_THIN;
   // 边线条粗细
@@ -248,6 +250,8 @@ export function setKeyHander(graph: mxGraph) {
 
     // console.log('evt: ', evt);
   });
+
+  // 添加spance空格 加 滚轮 移动加放大缩小
 
   // Changes the zoom on mouseWheel events
   // mi.mxEvent.addMouseWheelListener(function (evt, up) {
