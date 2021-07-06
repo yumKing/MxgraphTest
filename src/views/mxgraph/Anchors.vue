@@ -29,10 +29,7 @@ export default defineComponent({
       console.log('destroy Anchors');
     });
 
-    mi.mxGraph.prototype.getAllConnectionConstraints = (
-      terminal: any,
-      source: boolean
-    ): any => {
+    mi.mxGraph.prototype.getAllConnectionConstraints = (terminal: any, source: boolean): any => {
       if (terminal != null && terminal.shape != null) {
         if (terminal.shape.stencil != null) {
           if (terminal.shape.stencil.constraints != null) {
@@ -75,17 +72,10 @@ export default defineComponent({
         graph.setAllowDanglingEdges(false);
         graph.setConnectable(true);
         graph.connectionHandler.createEdgeState = (me: any) => {
-          const edge = graph.createEdge(
-            {} as mx.mxCell,
-            null,
-            null,
-            {} as mx.mxCell,
-            {} as mx.mxCell
-          );
+          const edge = graph.createEdge({} as mx.mxCell, null, null, {} as mx.mxCell, {} as mx.mxCell);
           return new mi.mxCellState(graph.view, edge, graph.getCellStyle(edge));
         };
-        graph.getStylesheet().getDefaultEdgeStyle()['edgeStyle'] =
-          'orthogonalEdgeStyle';
+        graph.getStylesheet().getDefaultEdgeStyle()['edgeStyle'] = 'orthogonalEdgeStyle';
 
         new mi.mxRubberband(graph);
         var parent = graph.getDefaultParent();

@@ -11,27 +11,27 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, onBeforeUnmount, onMounted, ref, onBeforeMount, getCurrentInstance } from 'vue';
-import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
-import { useStore, mapState } from 'vuex';
+import { defineComponent, onBeforeUnmount, onMounted, ref, onBeforeMount, getCurrentInstance, computed, watch } from 'vue';
+import { useStore } from 'vuex';
+import { Types } from '@/store/modules/type';
 
-import mi, { createGraph, createNode, createRelation, graphConstants } from '@/views/mxgraph/util/mxgraph';
+import mi, { createGraph, createNode, createRelation, graphConstants, Graph } from '@/views/mxgraph/util/mxgraph';
 import * as mx from 'mxgraph';
 import * as rx from 'rxjs';
 import * as op from 'rxjs/operators';
 
-import TestApi from '@/api/test';
+import ProcessApi from '@/api/process';
 import { NodeInfo, RelationInfo } from '@/views/mxgraph/model/node.model';
 
 export default defineComponent({
   name: 'Process',
 
   setup() {
-    console.log('create MyFlow');
+    console.log('create Process');
     const graphContainer = ref<Element>();
 
     const title = ref('话术流程图');
-    let graph: mx.mxGraph = {} as mx.mxGraph;
+    let graph: Graph = {} as Graph;
 
     // 结点信息
     const nodesList = ref<{ [id: string]: NodeInfo }>({});
@@ -45,58 +45,59 @@ export default defineComponent({
     // 判断路由过来是否有参数，有则说明是加载已有的画布，否则是新的画布
     // 有参数则调用获取画布数据接口，返回节点和节点关系信息数据，并将节点绘制在画布中
     // 无参数，则在空白画布上创建一个空白的节点
-    const cc = getCurrentInstance();
-    console.log('当前实例: ', cc);
-
+    // const cc = getCurrentInstance();
+    // console.log('当前实例: ', cc);
+    // 获取store
+    const store = useStore();
     // 获取路由信息
-    const route = useRoute();
-    // const router = useRouter()
-    // console.log("当前路由: ", route, "路由实例: ", router);
-    console.log('path: ', route.fullPath, 'param: ', route.params, 'query: ', route.query);
-    // const flowId = route.params.id
-    const flowId = route.query.id;
+    // const route = useRoute();
+    // let rp = route.params;
 
-    onBeforeRouteUpdate((guard) => {
-      console.log('路由发生变化', guard);
+    // onBeforeRouteUpdate((guard) => {
+    //   console.log('路由发生变化', guard);
+
+    //   rp = guard.params;
+    //   clearNodes();
+    //   getData(true);
+    // });
+    let processId = 0;
+    onMounted(() => {
+      getData();
     });
 
-    onMounted(() => {
-      rx.of(flowId)
+    onBeforeUnmount(() => {
+      // 重置 vuex
+      store.dispatch(Types.SET_PROCESS_DETAIL, 0);
+
+      console.log('destroy MyFlow');
+    });
+
+    const getData = () => {
+      rx.of(processId)
         .pipe(
-          op.tap(() => initGraph()),
-          op.map((fid) => {
-            if (!fid) {
+          op.map((p) => {
+            if (p == 0) {
+              initGraph();
               defaultCanvas();
               return false;
             } else {
+              clearNodes();
               return true;
             }
           }),
           op.filter((x) => x),
           op.take(1),
-          op.switchMap(() => TestApi.getNodeInfoList(route.params)),
+          op.switchMap(() => ProcessApi.getProcessDetail({ id: processId })),
           op.catchError((err) => rx.of('error')),
           op.map<any, any>((res) => res.data),
           op.tap((data) => {
-            nodesList.value = data.nodesList;
-
-            // for (let key in nls) {
-            //   nodesList.value[key] = ref<any>(nls[key]);
-            // }
-
-            nodeRelations.value = data.nodeRelations;
-            // for (let key in nrl) {
-            // nodeRelations.value[key] = ref<any>(nrl[key]);
-            // }
+            nodesList.value = data.nodes;
+            nodeRelations.value = data.nodeRels;
             dataInit();
           })
         )
         .subscribe();
-    });
-
-    onBeforeUnmount(() => {
-      console.log('destroy MyFlow');
-    });
+    };
 
     const initGraph = () => {
       if (!mi.mxClient.isBrowserSupported()) {
@@ -114,18 +115,12 @@ export default defineComponent({
           edge.setValue(graphConstants.defaultIntent);
           const source = graph.getModel().getTerminal(edge, true);
           const target = graph.getModel().getTerminal(edge, false);
-          target.collapsed = true;
-          edge.setId(source.getId() + '_' + target.getId());
 
           // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
           if (target.getValue() === graphConstants.defaultPrologue) {
             target.setValue(graphConstants.defaultQuestion);
           }
           // const edgeStyle = graph.getCellStyle(edge);
-
-          graphNodes.value.push(target);
-          graphRelations.value.push(edge);
-
           nodesList.value[target.getId()] = {
             id: target.getId(),
             xpos: target.getGeometry().x,
@@ -133,13 +128,22 @@ export default defineComponent({
             content: target.getValue(),
             soundRecordable: false,
             hasVariable: false,
+            isNew: true,
           };
           nodeRelations.value[edge.getId()] = {
             id: edge.getId(),
-            sourceId: source.getId(),
+            sourceId: source.getId().slice(4),
             targetId: target.getId(),
-            intent: edge.getValue(),
+            intentId: edge.getValue(),
+            isNew: true,
           };
+
+          target.setId('node' + target.getId());
+
+          target.collapsed = true;
+          edge.setId('rel' + edge.getId());
+          graphNodes.value.push(target);
+          graphRelations.value.push(edge);
         });
 
         const originValueCC = graph.model.valueForCellChanged;
@@ -153,13 +157,11 @@ export default defineComponent({
 
           if (cell.edge) {
             // 是边
-            const selectedRel = nodeRelations.value[cell.getId()];
-            selectedRel.intent = cell.getValue();
+            const selectedRel = nodeRelations.value[cell.getId().slice(3)];
+            selectedRel.intentId = cell.getValue();
           } else {
             // 是结点
-            const selectedNode = nodesList.value[cell.getId()];
-            selectedNode.xpos = cell.getGeometry().x;
-            selectedNode.ypos = cell.getGeometry().y;
+            const selectedNode = nodesList.value[cell.getId().slice(4)];
             selectedNode.content = cell.getValue();
           }
         };
@@ -167,7 +169,7 @@ export default defineComponent({
           const geos = originGeoCC.call(this, cell, geo);
           if (cell.vertex) {
             // 是结点
-            const selectedNode = nodesList.value[cell.getId()];
+            const selectedNode = nodesList.value[cell.getId().slice(4)];
             selectedNode.xpos = cell.getGeometry().x;
             selectedNode.ypos = cell.getGeometry().y;
           }
@@ -226,6 +228,8 @@ export default defineComponent({
         //   graphConstants.vertexWidth,
         //   graphConstants.vertexHeight
         // );
+        // 这里的id是不含有node开头，所以可以作为辨别
+
         nodesList.value[v1.getId()] = {
           id: v1.getId(),
           xpos: v1.getGeometry().x,
@@ -233,37 +237,92 @@ export default defineComponent({
           content: v1.getValue(),
           soundRecordable: false,
           hasVariable: false,
+          isNew: true,
         };
 
+        v1.setId('node' + v1.getId());
         graphNodes.value.push(v1);
       } finally {
         graph.getModel().endUpdate();
       }
     };
 
-    const showNodeInfo = () => {
-      // 防止没有停止编辑导致直接保存
-      if (graph.isEditing()) {
-        graph.stopEditing(false);
-      }
-      console.log('info: ', nodesList.value, nodeRelations.value);
+    const clearNodes = () => {
+      graph.removeCells(graphNodes.value, true);
+      nodesList.value = {};
+      graphNodes.value = [];
     };
-    const saveNodeInfo = () => {
-      // 防止没有停止编辑导致直接保存
-      if (graph.isEditing()) {
-        graph.stopEditing(false);
+
+    // vuex 创建
+    watch(
+      () => store.getters.processCreate,
+      (cur, pre) => {
+        clearNodes();
+        defaultCanvas();
+
+        // 重置 vuex
+        store.dispatch(Types.SET_PROCESS_DETAIL, 0);
       }
-      console.log('graph: ', graphNodes.value, graphRelations.value);
-    };
+    );
+
+    // 监听流程详情
+    watch(
+      () => store.getters.processId,
+      (cur, pre) => {
+        // 查询流程详情
+        processId = cur;
+        getData();
+      }
+    );
+
+    // vuex 监听保存
+    watch(
+      () => store.getters.processSave,
+      (cur, pre) => {
+        // 保存操作开始
+        // 防止没有停止编辑导致直接保存
+        if (graph.isEditing()) {
+          graph.stopEditing(false);
+        }
+        console.log('info: ', nodesList.value, nodeRelations.value);
+        console.log('graph: ', graphNodes.value, graphRelations.value);
+
+        const param: { nodes: Array<any>; nodeRels: Array<any> } = {
+          nodes: [],
+          nodeRels: [],
+        };
+        for (let k in nodesList.value) {
+          param.nodes.push(nodesList.value[k]);
+        }
+        for (let k in nodeRelations.value) {
+          param.nodeRels.push(nodeRelations.value[k]);
+        }
+        ProcessApi.saveProcessDetail(param)
+          .pipe(
+            op.tap(
+              (data) => console.log(data),
+              (err) => console.log(err)
+            ),
+            op.catchError((err) => {
+              console.log(err);
+              return rx.of('err');
+            })
+          )
+          .subscribe();
+      }
+    );
+    watch(
+      () => store.getters.processPublish,
+      (cur, pre) => {
+        // 发布操作开始
+      }
+    );
+
     return {
       graphContainer,
       title,
       nodesList,
       nodeRelations,
-      graphNodes,
-      graphRelations,
-      showNodeInfo,
-      saveNodeInfo,
     };
   },
 });

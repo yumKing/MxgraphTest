@@ -1,8 +1,10 @@
 import { createStore } from 'vuex';
+import getters from './getters';
+import process from './modules/process';
 
 export default createStore({
-  state: {},
-  mutations: {},
-  actions: {},
-  modules: {},
+  modules: {
+    process,
+  },
+  getters: getters,
 });

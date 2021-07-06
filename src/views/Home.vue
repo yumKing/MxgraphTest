@@ -8,7 +8,7 @@
 
 <script lang="ts">
 import { computed, defineComponent, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
-import HelloWorld from '@/components/HelloWorld.vue'; // @ is an alias to /src
+import HelloWorld from '@/views/HelloWorld.vue'; // @ is an alias to /src
 
 export default defineComponent({
   name: 'Home',
@@ -36,16 +36,16 @@ export default defineComponent({
     const title = ref('this is title');
 
     console.log('create home component');
-    console.dir(props);
-    console.dir(context);
-    console.log(title);
+    // console.dir(props);
+    // console.dir(context);
+    // console.log(title);
 
     onBeforeUnmount(() => {
       console.log('close home component');
     });
 
     // 计算属性
-    const count = ref(1)
+    const count = ref(1);
     // const propsCount = computed({
     //   get: () => count.value + 1,
     //   set: val => count.value = val -1

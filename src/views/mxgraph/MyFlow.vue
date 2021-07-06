@@ -10,28 +10,16 @@
 </template>
 
 <script lang="ts">
-import {
-  defineComponent,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  onBeforeMount,
-  getCurrentInstance,
-} from 'vue';
+import { defineComponent, onBeforeUnmount, onMounted, ref, onBeforeMount, getCurrentInstance } from 'vue';
 import { useRoute, useRouter, onBeforeRouteUpdate } from 'vue-router';
 import { useStore, mapState } from 'vuex';
 
-import mi, {
-  createGraph,
-  createNode,
-  createRelation,
-  graphConstants,
-} from './util/mxgraph';
+import mi, { createGraph, createNode, createRelation, graphConstants, Graph } from './util/mxgraph';
 import * as mx from 'mxgraph';
 import * as rx from 'rxjs';
 import * as op from 'rxjs/operators';
 
-import TestApi from '@/api/test';
+import ProcessApi from '@/api/process';
 import { NodeInfo, RelationInfo } from './model/node.model';
 
 export default defineComponent({
@@ -44,7 +32,7 @@ export default defineComponent({
     const graphContainer = ref<Element>();
 
     const title = ref('话术流程图');
-    let graph: mx.mxGraph = {} as mx.mxGraph;
+    let graph: Graph = {} as Graph;
 
     // 结点信息
     const nodesList = ref<{ [id: string]: NodeInfo }>({});
@@ -65,14 +53,7 @@ export default defineComponent({
     const route = useRoute();
     // const router = useRouter()
     // console.log("当前路由: ", route, "路由实例: ", router);
-    console.log(
-      'path: ',
-      route.fullPath,
-      'param: ',
-      route.params,
-      'query: ',
-      route.query
-    );
+    console.log('path: ', route.fullPath, 'param: ', route.params, 'query: ', route.query);
     // const flowId = route.params.id
     const flowId = route.query.id;
 
@@ -94,7 +75,7 @@ export default defineComponent({
           }),
           op.filter((x) => x),
           op.take(1),
-          op.switchMap(() => TestApi.getNodeInfoList(route.params)),
+          op.switchMap(() => ProcessApi.getProcessDetail(route.params)),
           op.catchError((err) => rx.of('error')),
           op.map<any, any>((res) => res.data),
           op.tap((data) => {
@@ -129,41 +110,38 @@ export default defineComponent({
         graph = createGraph(container);
 
         // 添加一个连结监听器，监听到连接的节点和边的信息
-        graph.connectionHandler.addListener(
-          mi.mxEvent.CONNECT,
-          (sender, evt) => {
-            const edge = evt.getProperty('cell');
-            edge.setValue(graphConstants.defaultIntent);
-            const source = graph.getModel().getTerminal(edge, true);
-            const target = graph.getModel().getTerminal(edge, false);
-            target.collapsed = true;
-            edge.setId(source.getId() + '_' + target.getId());
+        graph.connectionHandler.addListener(mi.mxEvent.CONNECT, (sender, evt) => {
+          const edge = evt.getProperty('cell');
+          edge.setValue(graphConstants.defaultIntent);
+          const source = graph.getModel().getTerminal(edge, true);
+          const target = graph.getModel().getTerminal(edge, false);
+          target.collapsed = true;
+          edge.setId(source.getId() + '_' + target.getId());
 
-            // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
-            if (target.getValue() === graphConstants.defaultPrologue) {
-              target.setValue(graphConstants.defaultQuestion);
-            }
-            // const edgeStyle = graph.getCellStyle(edge);
-
-            graphNodes.value.push(target);
-            graphRelations.value.push(edge);
-
-            nodesList.value[target.getId()] = {
-              id: target.getId(),
-              xpos: target.getGeometry().x,
-              ypos: target.getGeometry().y,
-              content: target.getValue(),
-              soundRecordable: false,
-              hasVariable: false,
-            };
-            nodeRelations.value[edge.getId()] = {
-              id: edge.getId(),
-              sourceId: source.getId(),
-              targetId: target.getId(),
-              intent: edge.getValue(),
-            };
+          // 判断target的内容是否为空，为空则设置为下面的提示，否则不修改
+          if (target.getValue() === graphConstants.defaultPrologue) {
+            target.setValue(graphConstants.defaultQuestion);
           }
-        );
+          // const edgeStyle = graph.getCellStyle(edge);
+
+          graphNodes.value.push(target);
+          graphRelations.value.push(edge);
+
+          nodesList.value[target.getId()] = {
+            id: target.getId(),
+            xpos: target.getGeometry().x,
+            ypos: target.getGeometry().y,
+            content: target.getValue(),
+            soundRecordable: false,
+            hasVariable: false,
+          };
+          nodeRelations.value[edge.getId()] = {
+            id: edge.getId(),
+            sourceId: source.getId(),
+            targetId: target.getId(),
+            intentId: edge.getValue(),
+          };
+        });
 
         const originValueCC = graph.model.valueForCellChanged;
         const originStyleCC = graph.model.styleForCellChanged;
@@ -177,7 +155,7 @@ export default defineComponent({
           if (cell.edge) {
             // 是边
             const selectedRel = nodeRelations.value[cell.getId()];
-            selectedRel.intent = cell.getValue();
+            selectedRel.intentId = cell.getValue();
           } else {
             // 是结点
             const selectedNode = nodesList.value[cell.getId()];
@@ -197,14 +175,12 @@ export default defineComponent({
           return geos;
         };
 
-        graph
-          .getSelectionModel()
-          .addListener(mi.mxEvent.CHANGE, (sender, evt) => {
-            if (sender.cells && sender.cells[0]) {
-              refNode.value = sender.cells[0];
-              console.log('chage:', refNode.value);
-            }
-          });
+        graph.getSelectionModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
+          if (sender.cells && sender.cells[0]) {
+            refNode.value = sender.cells[0];
+            console.log('chage:', refNode.value);
+          }
+        });
 
         // 添加放大缩小
         // var btn1 = mi.mxUtils.button('+', function()
@@ -228,9 +204,7 @@ export default defineComponent({
       }
 
       for (let key in nodeRelations.value) {
-        graphRelations.value.push(
-          createRelation(graph, nodeRelations.value[key])
-        );
+        graphRelations.value.push(createRelation(graph, nodeRelations.value[key]));
       }
 
       // rx.of(nodesList.value).pipe(
@@ -247,15 +221,7 @@ export default defineComponent({
       try {
         const date = new Date();
         // 初始化时 就得添加一个结点，并返回id设置到结点id中
-        const v1 = graph.insertVertex(
-          parent,
-          null,
-          graphConstants.defaultPrologue,
-          400,
-          20,
-          graphConstants.vertexWidth,
-          graphConstants.vertexHeight
-        );
+        const v1 = graph.insertVertex(parent, null, graphConstants.defaultPrologue, 400, 20, graphConstants.vertexWidth, graphConstants.vertexHeight);
         // v1.geometry.alternateBounds = new mi.mxRectangle(
         //   0,
         //   0,

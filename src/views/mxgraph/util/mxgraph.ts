@@ -1,4 +1,5 @@
-import factory, { mxGraph, mxCell, mxPoint, mxUtils, mxEvent } from 'mxgraph';
+import factory from 'mxgraph';
+import * as mx from 'mxgraph';
 import { NodeInfo, RelationInfo } from '../model/node.model';
 
 // (window as any)['mxBasePath'] = 'assets/mxgraph';
@@ -7,6 +8,19 @@ const mi = factory({
 });
 
 export default mi;
+
+export class Graph extends mi.mxGraph {
+  constructor(container: HTMLElement, model?: mx.mxGraphModel | undefined, renderHint?: string | undefined, stylesheet?: mx.mxStylesheet | undefined, themes?: any, standalone?: boolean | undefined) {
+    super(container, model, renderHint, stylesheet);
+  }
+
+  // 空格键状态， false为没有按下，true为按下
+  spaceKeyPressed = false;
+
+  isZoomWheelEvent(evt: MouseEvent): boolean {
+    return this.spaceKeyPressed || mi.mxEvent.isAltDown(evt) || (mi.mxEvent.isMetaDown(evt) && mi.mxClient.IS_MAC) || mi.mxEvent.isControlDown(evt);
+  }
+}
 
 export const graphConstants = {
   defaultPrologue: '请填写开头语',
@@ -21,13 +35,15 @@ export const graphConstants = {
  * @param container
  * @returns
  */
-export function createGraph(container: HTMLElement): mxGraph {
+export function createGraph(container: HTMLElement): Graph {
   // 不允许内置的上下文菜单
   mi.mxEvent.disableContextMenu(container);
 
   mi.mxConnectionHandler.prototype.connectImage = new mi.mxImage('mxgraph/images/dot.gif', 16, 16);
 
-  const graph = new mi.mxGraph(container);
+  const graph = new Graph(container);
+  const parent = graph.getDefaultParent();
+  parent.setId('parent');
 
   setVertexInfo(graph);
 
@@ -49,7 +65,7 @@ export function createGraph(container: HTMLElement): mxGraph {
  * 结点配置
  * @param graph
  */
-export function setVertexInfo(graph: mxGraph) {
+export function setVertexInfo(graph: Graph) {
   // config graph
   // 设置结点样式
   const vertexStyle = graph.getStylesheet().getDefaultVertexStyle();
@@ -88,7 +104,7 @@ export function setVertexInfo(graph: mxGraph) {
  * 设置边信息
  * @param graph
  */
-export function setEdgeInfo(graph: mxGraph) {
+export function setEdgeInfo(graph: Graph) {
   // 设置 连线样式为曲线
   const edgeStyle = graph.getStylesheet().getDefaultEdgeStyle();
   edgeStyle[mi.mxConstants.STYLE_EDGE] = mi.mxConstants.EDGESTYLE_ORTHOGONAL;
@@ -99,7 +115,9 @@ export function setEdgeInfo(graph: mxGraph) {
     return new mi.mxPoint(ponits[2].x, ponits[2].y);
   };
   // 禁止调整线条弯曲度
-  graph.setCellsBendable(false);
+  // graph.setCellsBendable(false);
+  edgeStyle[mi.mxConstants.STYLE_BENDABLE] = 0;
+
   // 设置边的终端箭头样式
   edgeStyle[mi.mxConstants.STYLE_ENDARROW] = mi.mxConstants.ARROW_OPEN_THIN;
   // 边线条粗细
@@ -123,7 +141,7 @@ export function setEdgeInfo(graph: mxGraph) {
  * graph 配置
  * @param graph
  */
-export function setGraphInfo(graph: mxGraph) {
+export function setGraphInfo(graph: Graph) {
   // 设置容器画布大小
   // Optional disabling of sizing
   // graph.setCellsResizable(false);
@@ -228,30 +246,16 @@ export function setGraphInfo(graph: mxGraph) {
   // };
   // graph.allowAutoPanning = true;
   graph.setPanning(true);
-
-  // graph.panningHandler.useLeftButtonForPanning = true;
-
-  // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
-  // console.log(sender, evt);
-  // })
-}
-
-/**
- * 设置键盘鼠标事件处理
- * @param graph
- */
-export function setKeyHander(graph: mxGraph) {
-  // 鼠标键盘事件处理
-  const keyHandler = new mi.mxKeyHandler(graph);
-  keyHandler.bindKey(46, (evt) => {
-    if (graph.isEnabled()) {
-      graph.removeCells(null as any, true);
-    }
-
-    // console.log('evt: ', evt);
-  });
-
-  // 添加spance空格 加 滚轮 移动加放大缩小
+  const panningHandlerIsForcePanningEvent = graph.panningHandler.isForcePanningEvent;
+  graph.panningHandler.isForcePanningEvent = function (me) {
+    return (
+      panningHandlerIsForcePanningEvent.call(this, me) ||
+      graph.spaceKeyPressed ||
+      (mi.mxEvent.isMouseEvent(me.getEvent()) &&
+        (this.usePopupTrigger || !mi.mxEvent.isPopupTrigger(me.getEvent())) &&
+        ((!mi.mxEvent.isControlDown(me.getEvent()) && mi.mxEvent.isRightMouseButton(me.getEvent())) || mi.mxEvent.isMiddleMouseButton(me.getEvent())))
+    );
+  };
 
   // Changes the zoom on mouseWheel events
   // mi.mxEvent.addMouseWheelListener(function (evt, up) {
@@ -269,6 +273,50 @@ export function setKeyHander(graph: mxGraph) {
   //     mi.mxEvent.consume(evt);
   //   }
   // });
+
+  // graph.panningHandler.useLeftButtonForPanning = true;
+
+  // graph.getModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
+  // console.log(sender, evt);
+  // })
+}
+
+/**
+ * 设置键盘鼠标事件处理
+ * @param graph
+ */
+export function setKeyHander(graph: Graph) {
+  // 鼠标键盘事件处理
+  const keyHandler = new mi.mxKeyHandler(graph);
+  keyHandler.bindKey(46, (evt) => {
+    if (graph.isEnabled()) {
+      graph.removeCells(null as any, true);
+    }
+
+    // console.log('evt: ', evt);
+  });
+
+  mi.mxEvent.addListener(
+    document,
+    'keydown',
+    mi.mxUtils.bind(null, (evt: any) => {
+      if (evt.which == 32 && !graph.isEditing()) {
+        graph.spaceKeyPressed = true;
+        graph.container.style.cursor = 'move';
+        if (!graph.isEditing() && mi.mxEvent.getSource(evt) == graph.container) {
+          mi.mxEvent.consume(evt);
+        }
+      }
+    })
+  );
+  mi.mxEvent.addListener(
+    document,
+    'keyup',
+    mi.mxUtils.bind(null, (evt: any) => {
+      graph.container.style.cursor = '';
+      graph.spaceKeyPressed = false;
+    })
+  );
 
   // const originKeyDown = mi.mxKeyHandler.prototype.keyDown;
   // keyHandler.keyDown = function (evt) {
@@ -289,7 +337,7 @@ export function setKeyHander(graph: mxGraph) {
  * 一些覆盖方法的重写
  * @param graph
  */
-export function setOverrideFunc(graph: mxGraph) {
+export function setOverrideFunc(graph: Graph) {
   // const originSelectCells = graph.getSelectionCells;
   // graph.getSelectionCells = function () {
   //   const selectCells = originSelectCells.call(this);
@@ -330,7 +378,7 @@ export function setOverrideFunc(graph: mxGraph) {
   // };
 
   // 如果没有定义偏移量 使能 剪辑
-  graph.isLabelClipped = (cell: mxCell): boolean => {
+  graph.isLabelClipped = (cell: mx.mxCell): boolean => {
     const geo = graph.model.getGeometry(cell);
     return geo != null && !geo.relative && (geo.offset == null || (geo.offset.x == 0 && geo.offset.y == 0));
   };
@@ -342,13 +390,13 @@ export function setOverrideFunc(graph: mxGraph) {
  * @param info
  * @returns
  */
-export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
+export function createNode(graph: Graph, info: NodeInfo): mx.mxCell {
   const parent = graph.getDefaultParent();
   graph.getModel().beginUpdate();
-  let cell = {} as mxCell;
+  let cell = {} as mx.mxCell;
   try {
     // 初始化时 就得添加一个结点，并返回id设置到结点id中
-    cell = graph.insertVertex(parent, info.id, info.content, info.xpos, info.ypos, graphConstants.vertexWidth, graphConstants.vertexHeight);
+    cell = graph.insertVertex(parent, 'node' + info.id, info.content, info.xpos, info.ypos, graphConstants.vertexWidth, graphConstants.vertexHeight);
     // cell.geometry.alternateBounds = new mi.mxRectangle(
     //   0,
     //   0,
@@ -367,13 +415,13 @@ export function createNode(graph: mxGraph, info: NodeInfo): mxCell {
  * @param info
  * @returns
  */
-export function createRelation(graph: mxGraph, info: RelationInfo): mxCell {
+export function createRelation(graph: Graph, info: RelationInfo): mx.mxCell {
   const parent = graph.getDefaultParent();
   graph.getModel().beginUpdate();
-  let cell = {} as mxCell;
+  let cell = {} as mx.mxCell;
   try {
     // 初始化时 就得添加一个结点，并返回id设置到结点id中
-    cell = graph.insertEdge(parent, info.id, info.intent, graph.getModel().getCell(info.sourceId), graph.getModel().getCell(info.targetId));
+    cell = graph.insertEdge(parent, 'rel' + info.id, info.intentId, graph.getModel().getCell('node' + info.sourceId), graph.getModel().getCell('node' + info.targetId));
   } finally {
     graph.getModel().endUpdate();
   }
@@ -392,7 +440,7 @@ const binomialBezier = (start: number, end: number): number => {
   }
   return cs / bcs;
 };
-const multiPointBezier = (basePoint: Array<mxPoint>, t: number): mxPoint => {
+const multiPointBezier = (basePoint: Array<mx.mxPoint>, t: number): mx.mxPoint => {
   const len = basePoint.length;
   let x = 0;
   let y = 0;
@@ -404,8 +452,8 @@ const multiPointBezier = (basePoint: Array<mxPoint>, t: number): mxPoint => {
   return new mi.mxPoint(Number(x.toFixed(2)), Number(y.toFixed(2)));
 };
 
-export const createBezierPoints = (basePoint: Array<mxPoint>, amountPoints: number): Array<mxPoint> => {
-  const points: Array<mxPoint> = [];
+export const createBezierPoints = (basePoint: Array<mx.mxPoint>, amountPoints: number): Array<mx.mxPoint> => {
+  const points: Array<mx.mxPoint> = [];
   for (let i = 0; i < amountPoints; i++) {
     points.push(multiPointBezier(basePoint, i / amountPoints));
   }
