@@ -23,6 +23,8 @@ import * as op from 'rxjs/operators';
 import ProcessApi from '@/api/process';
 import { NodeInfo, RelationInfo } from '@/views/mxgraph/model/node.model';
 
+import { ElMessage } from 'element-plus';
+
 export default defineComponent({
   name: 'Process',
 
@@ -177,8 +179,15 @@ export default defineComponent({
         };
 
         graph.getSelectionModel().addListener(mi.mxEvent.CHANGE, (sender, evt) => {
-          if (sender.cells && sender.cells[0]) {
-            refNode.value = sender.cells[0];
+          if (sender.cells && sender.cells.length == 1 && sender.cells[0]) {
+            const temp = (refNode.value = sender.cells[0]);
+            if (temp.isVertex()) {
+              store.dispatch(Types.SHOW_NODE, { nodeId: temp.getId(), content: nodesList.value[temp.getId().slice(4)].content });
+            } else {
+              store.dispatch(Types.SHOW_REL, { nodeId: temp.getId(), intentId: nodeRelations.value[temp.getId().slice(3)].intentId });
+            }
+          } else {
+            store.dispatch(Types.SHOW_GLOBAL, { globalData: '全局数据' });
           }
         });
 
@@ -300,7 +309,13 @@ export default defineComponent({
         ProcessApi.saveProcessDetail(param)
           .pipe(
             op.tap(
-              (data) => console.log(data),
+              (res) => {
+                console.log(res);
+                ElMessage.success({
+                  message: res.data.msg,
+                  type: 'success',
+                });
+              },
               (err) => console.log(err)
             ),
             op.catchError((err) => {
@@ -315,6 +330,30 @@ export default defineComponent({
       () => store.getters.processPublish,
       (cur, pre) => {
         // 发布操作开始
+      }
+    );
+
+    // 同步更新结点数据 结点关系数据
+    watch(
+      () => store.getters.nodeData,
+      (cur, pre) => {
+        if (cur.nodeId) {
+          if (cur.nodeId.indexOf('node') > -1) {
+            const nodeInfo = nodesList.value[cur.nodeId.slice(4)];
+            nodeInfo.content = cur.content;
+
+            const node = graphNodes.value.filter((n) => n.getId() === cur.nodeId).pop();
+            node?.setValue(cur.content);
+            graph.refresh();
+          } else {
+            const relInfo = nodeRelations.value[cur.nodeId.slice(3)];
+            relInfo.intentId = cur.intentId;
+
+            const rel = graphRelations.value.filter((n) => n.getId() === cur.nodeId).pop();
+            rel?.setValue(cur.intentId);
+            graph.refresh();
+          }
+        }
       }
     );
 
